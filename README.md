@@ -40,10 +40,10 @@ $env:FLASK_APP = "manage.py"
 
 | E-mail | Perfil |
 |--------|--------|
-| renata@bomfim.com.br | Administrador |
-| mariana@bomfim.com.br | Gestor |
-| lucas@bomfim.com.br | Operador |
-| ana@bomfim.com.br | Promotor |
+| rogerio+adm@4lia.com.br | Administrador |
+| rogerio+gest@4lia.com.br | Gestor |
+| rogerio+oper@4lia.com.br | Operador |
+| rogerio+prom@4lia.com.br | Promotor |
 
 Troque as senhas após o primeiro acesso em ambiente real.
 
