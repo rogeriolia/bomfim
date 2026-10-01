@@ -1,17 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus } from "@untitledui/icons";
 import { roles, useApp } from "@/app/store";
+import { ApiError, api, formatDateTime, type ApiUser } from "@/api/client";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
 import { Button, Choice, DataTable, Input, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
 
 export default function UsuariosPage() {
     const { notify } = useApp();
-    const [users, setUsers] = useState([
-        { name: "Renata Melo", email: "renata@bomfim.com.br", role: "admin", unit: "Salvador" },
-        { name: "Mariana Costa", email: "mariana@bomfim.com.br", role: "manager", unit: "Salvador" },
-        { name: "Lucas Almeida", email: "lucas@bomfim.com.br", role: "operator", unit: "Aracaju" },
-        { name: "Ana Ferreira", email: "ana@bomfim.com.br", role: "promoter", unit: "Feira de Santana" },
-    ]);
+    const [users, setUsers] = useState<ApiUser[]>([]);
+    const [loading, setLoading] = useState(true);
     const [open, setOpen] = useState(false);
     const [search, setSearch] = useState("");
     const [name, setName] = useState("");
@@ -19,12 +16,28 @@ export default function UsuariosPage() {
     const [role, setRole] = useState("operator");
     const [unit, setUnit] = useState("Salvador");
     const [error, setError] = useState("");
+
+    const load = async () => {
+        setLoading(true);
+        try {
+            setUsers(await api.listUsers());
+        } catch (e) {
+            notify(e instanceof ApiError ? e.message : "Não foi possível carregar usuários.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void load();
+    }, []);
+
     return (
         <PageState>
             <div className="section-heading">
                 <div>
                     <h2>Usuários</h2>
-                    <p>{users.length} pessoas na sua operação</p>
+                    <p>{loading ? "Carregando…" : `${users.length} pessoas na sua operação`}</p>
                 </div>
                 <Button size="sm" iconLeading={Plus} onClick={() => setOpen(true)}>
                     Novo usuário
@@ -36,28 +49,36 @@ export default function UsuariosPage() {
                 columns={["Nome", "E-mail", "Perfil", "Unidade", "Status", "Último acesso"]}
                 rows={users
                     .filter((u) => (u.name + u.email).toLowerCase().includes(search.toLowerCase()))
-                    .map((u) => [u.name, u.email, roles[u.role as keyof typeof roles], u.unit, <Status>Ativo</Status>, "30/09/2026"])}
+                    .map((u) => [
+                        u.name,
+                        u.email,
+                        roles[u.role],
+                        u.unit ?? "—",
+                        <Status>{u.status === "active" ? "Ativo" : u.status}</Status>,
+                        formatDateTime(u.last_access_at),
+                    ])}
             />
             <SlideoutMenu isOpen={open} onOpenChange={setOpen} isDismissable>
                 <SlideoutMenu.Header onClose={() => setOpen(false)}>
                     <h2>Novo usuário</h2>
-                    <p className="subtle">Adicione uma pessoa ao ambiente demonstrativo.</p>
+                    <p className="subtle">Senha inicial padrão: 123456789 (alterável depois).</p>
                 </SlideoutMenu.Header>
                 <SlideoutMenu.Content>
                     <form
                         className="form-stack"
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                             e.preventDefault();
-                            if (users.some((u) => u.email.toLowerCase() === email.toLowerCase())) {
-                                setError("Este e-mail já está cadastrado.");
-                                return;
-                            }
-                            setUsers((v) => [...v, { name, email, role, unit }]);
-                            setName("");
-                            setEmail("");
                             setError("");
-                            setOpen(false);
-                            notify("Usuário adicionado nesta demonstração. Nenhum convite foi enviado.");
+                            try {
+                                await api.createUser({ name, email, role, unit });
+                                setName("");
+                                setEmail("");
+                                setOpen(false);
+                                notify("Usuário adicionado com sucesso.");
+                                await load();
+                            } catch (err) {
+                                setError(err instanceof ApiError ? err.message : "Erro ao criar usuário.");
+                            }
                         }}
                     >
                         <Input label="Nome" isRequired value={name} onChange={setName} />

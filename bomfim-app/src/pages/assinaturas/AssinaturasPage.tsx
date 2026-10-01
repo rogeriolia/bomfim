@@ -1,17 +1,44 @@
-import { useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
+import { ApiError, api, formatDate } from "@/api/client";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, ExportButton, PageHeading, PageState, SearchFilter, Status, exportCsv } from "@/components/bomfim/ui";
 
+type SigRow = { company: string; document: string; sent_at: string; signatories: string; status: string; last_updated_at: string };
+
 export default function AssinaturasPage() {
-    const { records, notify } = useApp();
+    const { notify } = useApp();
     const [search, setSearch] = useState("");
     const [status, setStatus] = useState("all");
-    const [sent, setSent] = useState<string[]>([]);
+    const [rows, setRows] = useState<SigRow[]>([]);
     const statuses = ["Aguardando", "Visualizado", "Parcialmente assinado", "Concluído", "Expirado", "Cancelado"];
-    const rows = records
-        .slice(0, 12)
-        .map((r, i) => ({ ...r, status: statuses[i % 6] }))
-        .filter((r) => r.name.toLowerCase().includes(search.toLowerCase()) && (status === "all" || r.status === status));
+
+    useEffect(() => {
+        void (async () => {
+            try {
+                setRows(await api.listSignatures());
+            } catch (e) {
+                notify(e instanceof ApiError ? e.message : "Erro ao carregar assinaturas.");
+            }
+        })();
+    }, [notify]);
+
+    const filtered = useMemo(
+        () => rows.filter((r) => r.company.toLowerCase().includes(search.toLowerCase()) && (status === "all" || r.status === status)),
+        [rows, search, status],
+    );
+
+    const tableRows: (string | ReactNode)[][] = filtered.map((r) => [
+        r.company,
+        r.document,
+        formatDate(r.sent_at),
+        r.signatories,
+        <Status>{r.status}</Status>,
+        formatDate(r.last_updated_at),
+        <Button color="link-gray" size="sm" isDisabled={["Concluído", "Cancelado"].includes(r.status)}>
+            Reenviar
+        </Button>,
+    ]);
+
     return (
         <div className="page">
             <PageHeading title="Assinaturas" eyebrow="DOCUMENTAÇÃO" description="Acompanhe contratos e mantenha as assinaturas em dia.">
@@ -20,7 +47,7 @@ export default function AssinaturasPage() {
                         exportCsv(
                             "assinaturas",
                             ["Empresa", "Status"],
-                            rows.map((r) => [r.name, r.status]),
+                            filtered.map((r) => [r.company, r.status]),
                         )
                     }
                 />
@@ -37,25 +64,7 @@ export default function AssinaturasPage() {
                 <DataTable
                     title="Assinaturas"
                     columns={["Empresa", "Documento", "Enviado em", "Signatários", "Status", "Última atualização", "Ação"]}
-                    rows={rows.map((r) => [
-                        r.name,
-                        "Contrato de transporte",
-                        "28/09/2026",
-                        r.owner,
-                        <Status>{r.status}</Status>,
-                        sent.includes(r.id) ? "Agora (simulado)" : "30/09/2026",
-                        <Button
-                            color="link-gray"
-                            size="sm"
-                            isDisabled={["Concluído", "Cancelado"].includes(r.status)}
-                            onClick={() => {
-                                setSent((s) => [...s, r.id]);
-                                notify("Lembrete simulado. Nenhuma mensagem foi enviada.");
-                            }}
-                        >
-                            Lembrar
-                        </Button>,
-                    ])}
+                    rows={tableRows}
                 />
             </PageState>
         </div>

@@ -1,13 +1,39 @@
-import { useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { File06, UploadCloud02 } from "@untitledui/icons";
+import { ApiError, api, formatDate } from "@/api/client";
 import { useApp } from "@/app/store";
 import { Button, DataTable, PageHeading, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
 
 export default function DocumentosPage() {
-    const { records, notify } = useApp();
+    const { notify } = useApp();
     const [upload, setUpload] = useState(false);
     const [search, setSearch] = useState("");
     const [files, setFiles] = useState<string[]>([]);
+    const [apiRows, setApiRows] = useState<(string | ReactNode)[][]>([]);
+
+    useEffect(() => {
+        void (async () => {
+            try {
+                const docs = await api.listDocuments();
+                setApiRows(
+                    docs.map((d) => [
+                        <span className="file-name" key={d.id}>
+                            <File06 />
+                            {d.filename}
+                        </span>,
+                        d.company || "—",
+                        d.doc_type,
+                        d.uploaded_by,
+                        formatDate(d.uploaded_at),
+                        <Status>{d.status}</Status>,
+                    ]),
+                );
+            } catch (e) {
+                notify(e instanceof ApiError ? e.message : "Erro ao carregar documentos.");
+            }
+        })();
+    }, [notify]);
+
     return (
         <div className="page">
             <PageHeading title="Documentos" eyebrow="ARQUIVOS DA OPERAÇÃO" description="Consulte e organize a documentação das empresas.">
@@ -19,7 +45,7 @@ export default function DocumentosPage() {
                 {upload && (
                     <label className="upload-zone">
                         <UploadCloud02 />
-                        <strong>Selecione documentos para esta demonstração</strong>
+                        <strong>Selecione documentos (prévia local)</strong>
                         <span>PDF, PNG ou JPG · até 10 MB por arquivo</span>
                         <input
                             type="file"
@@ -47,30 +73,17 @@ export default function DocumentosPage() {
                         ...files
                             .filter((s) => s.toLowerCase().includes(search.toLowerCase()))
                             .map((s) => [
-                                <span className="file-name">
+                                <span className="file-name" key={s}>
                                     <File06 />
                                     {s}
                                 </span>,
                                 "Prévia local",
                                 s.split(".").pop()?.toUpperCase() || "Arquivo",
                                 "Renata Melo",
-                                "30/09/2026",
+                                formatDate(new Date().toISOString()),
                                 <Status>Aguardando validação</Status>,
                             ]),
-                        ...records
-                            .filter((r) => r.name.toLowerCase().includes(search.toLowerCase()))
-                            .slice(0, 8)
-                            .map((r, i) => [
-                                <span className="file-name">
-                                    <File06 />
-                                    {i % 2 ? "Contrato social.pdf" : "Comprovante de endereço.pdf"}
-                                </span>,
-                                r.name,
-                                "PDF",
-                                r.owner,
-                                r.updated.split("-").reverse().join("/"),
-                                <Status>{i % 3 ? "Aprovado" : "Em análise"}</Status>,
-                            ]),
+                        ...apiRows.filter((row) => String(row[1]).toLowerCase().includes(search.toLowerCase()) || String(row[0]).toLowerCase().includes(search.toLowerCase())),
                     ]}
                 />
             </PageState>

@@ -1,23 +1,32 @@
+import { type ReactNode, useEffect, useState } from "react";
+import { ApiError, api, formatDateTime } from "@/api/client";
+import { useApp } from "@/app/store";
 import { DataTable, PageState, Status } from "@/components/bomfim/ui";
 
 export default function AuditoriaPage() {
+    const { notify } = useApp();
+    const [rows, setRows] = useState<(string | ReactNode)[][]>([]);
+
+    useEffect(() => {
+        void (async () => {
+            try {
+                const logs = await api.listAuditLogs();
+                setRows(logs.map((l) => [formatDateTime(l.occurred_at), l.user, l.event, l.resource, <Status>{l.result}</Status>]));
+            } catch (e) {
+                notify(e instanceof ApiError ? e.message : "Erro ao carregar auditoria.");
+            }
+        })();
+    }, [notify]);
+
     return (
         <PageState>
             <div className="section-heading">
                 <div>
                     <h2>Auditoria</h2>
-                    <p>Exemplos de eventos que serão registrados pelo sistema.</p>
+                    <p>Eventos registrados pelo sistema.</p>
                 </div>
             </div>
-            <DataTable
-                title="Auditoria demonstrativa"
-                columns={["Data e hora", "Usuário", "Evento", "Recurso", "Resultado"]}
-                rows={[
-                    ["30/09/2026 09:42", "Renata Melo", "Atualização cadastral", "Flatter Cosméticos", <Status>Concluído</Status>],
-                    ["30/09/2026 09:38", "Mariana Costa", "Validação de documentos", "Tropical Bebidas", <Status>Concluído</Status>],
-                    ["30/09/2026 09:30", "Lucas Almeida", "Sincronização simulada", "Moskit", <Status>Concluído</Status>],
-                ]}
-            />
+            <DataTable title="Auditoria" columns={["Data e hora", "Usuário", "Evento", "Recurso", "Resultado"]} rows={rows} />
         </PageState>
     );
 }

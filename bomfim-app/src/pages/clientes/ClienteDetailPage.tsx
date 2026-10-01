@@ -43,11 +43,15 @@ export default function ClienteDetailPage() {
                 {editing ? (
                     <form
                         className="panel form-stack"
-                        onSubmit={(e) => {
+                        onSubmit={async (e) => {
                             e.preventDefault();
-                            update(r.id, { name, cnpj });
-                            notify("Dados atualizados nesta sessão.");
-                            setEditing(false);
+                            try {
+                                await update(r.id, { name, cnpj });
+                                notify("Dados atualizados.");
+                                setEditing(false);
+                            } catch {
+                                notify("Não foi possível salvar. Verifique a API.");
+                            }
                         }}
                     >
                         <Input label="Razão social" isRequired value={name} onChange={setName} />
