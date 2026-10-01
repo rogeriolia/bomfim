@@ -1,29 +1,42 @@
-# Bomfim
+# Bomfim — Product UI (Pack 01)
 
-## Desenvolvimento local (Windows)
+Front-end oficial da operação Bomfim: **Vite + React + TypeScript + Tailwind + Untitled UI**.
+
+O código da aplicação fica em [`bomfim-app/`](bomfim-app/).
+
+## Desenvolvimento local
 
 ```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe run.py
+cd bomfim-app
+npm install
+npm run dev
 ```
 
-Acesse http://localhost:5000.
+Abra [http://localhost:5173](http://localhost:5173).
 
-## Produção (Linux)
+Rotas úteis para validação:
 
-No ambiente virtual do servidor, execute a partir da raiz do projeto:
+- `/login`
+- `/overview`
+- `/cadastro/kanban`
+- `/clientes`
+- `/admin/usuarios`
+- `/design-system`
 
-```sh
-python -m pip install -r requirements.txt
-gunicorn --config gunicorn.conf.py wsgi:app
+## Build de produção
+
+```powershell
+cd bomfim-app
+npm run build
+npm run preview
 ```
 
-O ponto de entrada `wsgi.py` sempre usa `ProductionConfig`, com debug
-desativado. O Gunicorn usa a porta definida em `PORT` (padrão: 8000) e
-`WEB_CONCURRENCY` processos (padrão: 2), sem recarregamento automático.
-Configure `SECRET_KEY` nas variáveis de ambiente do serviço quando usar sessões.
-Os arquivos `.env` não são carregados automaticamente por esta configuração.
+Para hospedagem estática (SPA), configure fallback para `index.html` em todas as rotas — veja [`bomfim-app/docs/deploy-spa.md`](bomfim-app/docs/deploy-spa.md).
 
-O Gunicorn requer Unix/Linux para executar; no Windows, use `run.py`
-para desenvolvimento. A instalação do pacote no Windows não permite
-executar o servidor Gunicorn nativamente.
+## Stack
+
+- [Untitled UI React](https://www.untitledui.com/react) (componentes reais, React Aria)
+- React Router 8
+- `@untitledui/icons`
+
+O legado Flask foi descontinuado neste repositório; use apenas `bomfim-app`.

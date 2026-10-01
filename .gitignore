@@ -216,3 +216,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Bomfim front-end (Vite / bomfim-app)
+node_modules/
+bomfim-app/node_modules/
+bomfim-app/dist/
+bomfim-app/dist-ssr/
+bomfim-app/*.local
+bomfim-app/bun.lock
