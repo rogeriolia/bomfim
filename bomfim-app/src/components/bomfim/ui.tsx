@@ -1,10 +1,10 @@
 import { type ReactNode, useState } from "react";
 import { AlertCircle, ArrowUpRight, CheckCircle, Download01, FilterLines, SearchLg } from "@untitledui/icons";
-import { useLocation, useNavigate } from "react-router";
+import { NavLink } from "react-router";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { Table, TableCard } from "@/components/application/table/table";
-import { Tab, TabList, Tabs } from "@/components/application/tabs/tabs";
 import { Badge } from "@/components/base/badges/badges";
+import { cx } from "@/utils/cx";
 import { Button } from "@/components/base/buttons/button";
 import { Input } from "@/components/base/input/input";
 import { Select } from "@/components/base/select/select";
@@ -28,19 +28,20 @@ export function Choice({
     );
 }
 export function ContextNavigation({ items }: { items: [string, string][] }) {
-    const { pathname } = useLocation();
-    const navigate = useNavigate();
     return (
         <div className="context-nav">
-            <Tabs selectedKey={pathname} onSelectionChange={(key) => navigate(String(key))}>
-                <TabList type="underline" aria-label="Navegação contextual">
-                    {items.map(([label, path]) => (
-                        <Tab key={path} id={path} href={path}>
-                            {label}
-                        </Tab>
-                    ))}
-                </TabList>
-            </Tabs>
+            <nav className="context-nav__list" aria-label="Navegação contextual">
+                {items.map(([label, path]) => (
+                    <NavLink
+                        key={path}
+                        to={path}
+                        end={path === "/admin"}
+                        className={({ isActive }) => cx("context-nav__tab", isActive && "is-active")}
+                    >
+                        {label}
+                    </NavLink>
+                ))}
+            </nav>
         </div>
     );
 }

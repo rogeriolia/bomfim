@@ -93,6 +93,64 @@ def _port_in_use(host: str, port: int) -> bool:
         return sock.connect_ex((host, port)) == 0
 
 
+def _pids_listening_on_port(port: int) -> list[int]:
+    """PIDs com socket LISTEN na porta (Windows netstat / Unix ss)."""
+    pids: set[int] = set()
+    if sys.platform == "win32":
+        result = subprocess.run(["netstat", "-ano"], capture_output=True, text=True, check=False)
+        needle = f":{port}"
+        for line in result.stdout.splitlines():
+            if needle not in line or "LISTENING" not in line.upper():
+                continue
+            parts = line.split()
+            if parts:
+                try:
+                    pids.add(int(parts[-1]))
+                except ValueError:
+                    pass
+    else:
+        result = subprocess.run(["ss", "-ltnp"], capture_output=True, text=True, check=False)
+        if result.returncode != 0:
+            result = subprocess.run(["lsof", "-ti", f":{port}"], capture_output=True, text=True, check=False)
+            for part in result.stdout.split():
+                try:
+                    pids.add(int(part))
+                except ValueError:
+                    pass
+            return sorted(pids)
+        needle = f":{port}"
+        for line in result.stdout.splitlines():
+            if needle not in line:
+                continue
+            match = re.search(r"pid=(\d+)", line)
+            if match:
+                pids.add(int(match.group(1)))
+    return sorted(pids)
+
+
+def _terminate_pid(pid: int) -> None:
+    if pid == os.getpid():
+        return
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/F", "/PID", str(pid)], capture_output=True, check=False)
+    else:
+        subprocess.run(["kill", "-TERM", str(pid)], capture_output=True, check=False)
+
+
+def _free_port(api_port: int) -> bool:
+    pids = _pids_listening_on_port(api_port)
+    if not pids:
+        return not _port_in_use("127.0.0.1", api_port)
+    print(f"Encerrando processo(s) antigo(s) na porta {api_port}: {', '.join(map(str, pids))}")
+    for pid in pids:
+        _terminate_pid(pid)
+    for _ in range(25):
+        if not _port_in_use("127.0.0.1", api_port):
+            return True
+        time.sleep(0.2)
+    return not _port_in_use("127.0.0.1", api_port)
+
+
 def _run_flask_api(api_port: int) -> None:
     os.environ["API_PORT"] = str(api_port)
     from manage import app
@@ -100,11 +158,36 @@ def _run_flask_api(api_port: int) -> None:
     app.run(host="127.0.0.1", port=api_port, debug=False, use_reloader=False, threaded=True)
 
 
+def _api_patch_users_available(api_port: int) -> bool:
+    """True se PATCH /api/users existe (401/405/400 ok; 404 = API antiga)."""
+    import urllib.error
+    import urllib.request
+
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{api_port}/api/users/0",
+        method="PATCH",
+        headers={"Content-Type": "application/json"},
+        data=b"{}",
+    )
+    try:
+        urllib.request.urlopen(req)
+        return True
+    except urllib.error.HTTPError as e:
+        return e.code != 404
+    except OSError:
+        return False
+
+
 def _ensure_api(api_port: int = DEFAULT_API_PORT) -> bool:
     """Sobe a API no mesmo processo (thread) se a porta estiver livre."""
     if _port_in_use("127.0.0.1", api_port):
-        print(f"API Flask já ativa em http://127.0.0.1:{api_port}")
-        return True
+        if _api_patch_users_available(api_port):
+            print(f"API Flask já ativa em http://127.0.0.1:{api_port}")
+            return True
+        print(f"API desatualizada em http://127.0.0.1:{api_port}; reiniciando…", file=sys.stderr)
+        if not _free_port(api_port):
+            print(f"Erro: não foi possível liberar a porta {api_port}.", file=sys.stderr)
+            return False
     print(f"Iniciando API Flask em http://127.0.0.1:{api_port} …")
     thread = threading.Thread(target=_run_flask_api, args=(api_port,), name="bomfim-api", daemon=True)
     thread.start()

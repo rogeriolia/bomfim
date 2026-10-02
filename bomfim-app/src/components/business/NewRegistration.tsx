@@ -1,12 +1,28 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ApiError } from "@/api/client";
 import { useApp } from "@/app/store";
 import { SlideoutMenu } from "@/components/application/slideout-menus/slideout-menu";
+import { CnpjField } from "@/components/bomfim/cnpj-field";
 import { Button, Input } from "@/components/bomfim/ui";
+import { cnpjForSubmit, validateCnpj } from "@/utils/cnpj";
 
 export function NewRegistration({ open, onClose }: { open: boolean; onClose: () => void }) {
     const { add, notify } = useApp();
     const [name, setName] = useState("");
     const [cnpj, setCnpj] = useState("");
+    const [city, setCity] = useState("Salvador, BA");
+    const [error, setError] = useState("");
+    const [formKey, setFormKey] = useState(0);
+
+    useEffect(() => {
+        if (!open) return;
+        setName("");
+        setCnpj("");
+        setCity("Salvador, BA");
+        setError("");
+        setFormKey((k) => k + 1);
+    }, [open]);
+
     return (
         <SlideoutMenu
             isOpen={open}
@@ -24,36 +40,56 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
                     className="form-stack"
                     onSubmit={(e) => {
                         e.preventDefault();
-                        add({
-                            id: crypto.randomUUID().slice(0, 8),
-                            name,
-                            cnpj,
-                            stage: 0,
-                            promoter: "Ana Ferreira",
-                            owner: "Renata Melo",
-                            city: "Salvador, BA",
-                            unit: "Salvador",
-                            table: "Capital Express",
-                            updated: "2026-09-30",
-                            documents: 0,
-                            comments: 0,
-                        });
-                        notify("Cadastro criado na caixa de entrada.");
-                        setName("");
-                        setCnpj("");
-                        onClose();
+                        setError("");
+                        const cnpjToSave = cnpjForSubmit(cnpj);
+                        const cnpjErr = validateCnpj(cnpjToSave);
+                        if (cnpjErr) {
+                            setError(cnpjErr);
+                            return;
+                        }
+                        void (async () => {
+                            try {
+                                await add({
+                                    id: crypto.randomUUID().slice(0, 8),
+                                    name,
+                                    cnpj: cnpjToSave,
+                                    stage: 0,
+                                    promoter: "Ana Ferreira",
+                                    owner: "Renata Melo",
+                                    city,
+                                    unit: "Salvador",
+                                    table: "Capital Express",
+                                    updated: "2026-09-30",
+                                    documents: 0,
+                                    comments: 0,
+                                });
+                                notify("Cadastro criado na caixa de entrada.");
+                                setName("");
+                                setCnpj("");
+                                setCity("Salvador, BA");
+                                onClose();
+                            } catch (err) {
+                                setError(err instanceof ApiError ? err.message : "Não foi possível criar o cadastro.");
+                            }
+                        })();
                     }}
                 >
                     <Input label="Razão social" isRequired value={name} onChange={setName} />
-                    <Input
-                        label="CNPJ"
+                    <CnpjField
+                        key={formKey}
                         isRequired
                         value={cnpj}
                         onChange={setCnpj}
-                        pattern="[0-9]{2}\.[0-9]{3}\.[0-9]{3}/[0-9]{4}-[0-9]{2}"
-                        placeholder="12.345.678/0001-90"
+                        onLookup={(data) => {
+                            if (data.name) setName(data.name);
+                            if (data.city) setCity(data.city);
+                        }}
                     />
-                    <p className="subtle">Os dados desta demonstração são mantidos apenas durante a sessão da página.</p>
+                    {error && (
+                        <p role="alert" className="error-text">
+                            {error}
+                        </p>
+                    )}
                     <Button type="submit">Criar cadastro</Button>
                 </form>
             </SlideoutMenu.Content>

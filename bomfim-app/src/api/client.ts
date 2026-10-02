@@ -37,9 +37,22 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const res = await fetch(path, { ...init, headers });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-        throw new ApiError((data as { error?: string }).error || "Erro na requisição", res.status);
+        let message = (data as { error?: string }).error || "Erro na requisição";
+        if (res.status === 404 && init.method === "PATCH" && path.includes("/api/users/")) {
+            message =
+                "Não foi possível salvar (API desatualizada). Encerre o processo na porta 5001 e rode python run.py novamente.";
+        }
+        throw new ApiError(message, res.status);
     }
     return data as T;
+}
+
+export interface CnpjLookupResult {
+    cnpj: string;
+    name: string;
+    trade_name: string;
+    city: string;
+    status: string;
 }
 
 export interface ApiUser {
@@ -50,6 +63,7 @@ export interface ApiUser {
     unit: string | null;
     status: string;
     last_access_at: string | null;
+    photo: string | null;
 }
 
 export interface LoginResponse {
@@ -63,8 +77,13 @@ export const api = {
 
     listUsers: () => request<ApiUser[]>("/api/users"),
 
-    createUser: (body: { name: string; email: string; role: string; unit: string }) =>
+    createUser: (body: { name: string; email: string; role: string; unit: string; photo?: string | null }) =>
         request<ApiUser>("/api/users", { method: "POST", body: JSON.stringify(body) }),
+
+    updateUser: (
+        id: number,
+        body: Partial<{ name: string; email: string; role: string; unit: string; photo: string | null; status: string }>,
+    ) => request<ApiUser>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
     listRegistrations: () => request<Registration[]>("/api/registrations"),
 
@@ -73,6 +92,11 @@ export const api = {
 
     createRegistration: (body: Partial<Registration>) =>
         request<Registration>("/api/registrations", { method: "POST", body: JSON.stringify(body) }),
+
+    lookupCnpj: (cnpj: string) => {
+        const digits = cnpj.replace(/\D/g, "");
+        return request<CnpjLookupResult>(`/api/cnpj/${digits}`);
+    },
 
     listUnits: () =>
         request<{ id: number; name: string; code: string; locality: string; responsible: string; status: string }[]>("/api/units"),

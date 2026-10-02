@@ -4,6 +4,9 @@ from datetime import date
 
 from flask import Blueprint, jsonify, request
 
+from sqlalchemy.exc import IntegrityError
+
+from bomfim.cnpj import parse_cnpj
 from bomfim.extensions import db
 from bomfim.models import Registration, RegistrationStage, Unit, User
 from bomfim.security import login_required
@@ -20,6 +23,13 @@ def _resolve_user_by_name(name: str) -> User | None:
     if not name:
         return None
     return User.query.filter_by(name=name).first()
+
+
+def _cnpj_conflict(cnpj: str, exclude_id: int | None = None) -> bool:
+    q = Registration.query.filter_by(cnpj=cnpj)
+    if exclude_id is not None:
+        q = q.filter(Registration.id != exclude_id)
+    return q.first() is not None
 
 
 @registrations_bp.get("")
@@ -43,9 +53,15 @@ def get_registration(reg_id: int):
 def create_registration():
     data = request.get_json(silent=True) or {}
     name = (data.get("name") or "").strip()
-    cnpj = (data.get("cnpj") or "").strip()
-    if not name or not cnpj:
+    cnpj_raw = (data.get("cnpj") or "").strip()
+    if not name or not cnpj_raw:
         return jsonify({"error": "Nome e CNPJ são obrigatórios."}), 400
+
+    cnpj, cnpj_err = parse_cnpj(cnpj_raw)
+    if cnpj_err:
+        return jsonify({"error": cnpj_err}), 400
+    if _cnpj_conflict(cnpj):
+        return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
 
     stage = _resolve_stage(int(data.get("stage", 0))) or RegistrationStage.query.order_by(RegistrationStage.sort_order).first()
     unit = Unit.query.filter_by(name=data.get("unit") or "Salvador").first()
@@ -70,7 +86,11 @@ def create_registration():
         updated_at=date.today(),
     )
     db.session.add(reg)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
     return jsonify(registration_to_json(reg)), 201
 
 
@@ -85,7 +105,12 @@ def patch_registration(reg_id: int):
     if "name" in data:
         reg.name = data["name"]
     if "cnpj" in data:
-        reg.cnpj = data["cnpj"]
+        cnpj, cnpj_err = parse_cnpj(str(data.get("cnpj") or ""))
+        if cnpj_err:
+            return jsonify({"error": cnpj_err}), 400
+        if _cnpj_conflict(cnpj, exclude_id=reg.id):
+            return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
+        reg.cnpj = cnpj
     if "table" in data:
         reg.price_table = data["table"]
     if "city" in data:
@@ -114,5 +139,9 @@ def patch_registration(reg_id: int):
         reg.updated_at = date.fromisoformat(data["updated"])
 
     reg.updated_at = date.today()
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
     return jsonify(registration_to_json(reg))

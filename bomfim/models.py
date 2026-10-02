@@ -46,6 +46,7 @@ class User(db.Model):
     role = db.Column(db.String(32), nullable=False)
     status = db.Column(db.String(32), nullable=False, default="active")
     last_access_at = db.Column(db.DateTime(timezone=True), nullable=True)
+    photo = db.Column(db.Text, nullable=True)
     created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=lambda: datetime.now())
 
     organization = db.relationship("Organization", back_populates="users")

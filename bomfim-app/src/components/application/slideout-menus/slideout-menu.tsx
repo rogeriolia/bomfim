@@ -16,7 +16,7 @@ export const ModalOverlay = (props: ModalOverlayProps) => {
             {...props}
             className={(state) =>
                 cx(
-                    "fixed inset-0 flex min-h-dvh w-full items-center justify-end bg-overlay/70 pl-6 outline-hidden ease-linear md:pl-10",
+                    "fixed inset-0 z-50 flex min-h-dvh w-full items-stretch justify-end bg-overlay/70 pl-6 outline-hidden ease-linear md:pl-10",
                     state.isEntering && "duration-300 animate-in fade-in",
                     state.isExiting && "duration-500 animate-out fade-out",
                     typeof props.className === "function" ? props.className(state) : props.className,
@@ -34,7 +34,7 @@ export const Modal = (props: ModalProps) => (
         {...props}
         className={(state) =>
             cx(
-                "inset-y-0 right-0 h-full w-full max-w-100 shadow-xl transition",
+                "inset-y-0 right-0 h-full min-h-dvh w-full max-w-100 self-stretch shadow-xl transition",
                 state.isEntering && "duration-300 animate-in slide-in-from-right",
                 state.isExiting && "duration-500 animate-out slide-out-to-right",
                 typeof props.className === "function" ? props.className(state) : props.className,
@@ -93,7 +93,7 @@ interface SlideoutHeaderProps extends ComponentPropsWithRef<"header"> {
 const Header = ({ className, children, onClose, ...props }: SlideoutHeaderProps) => {
     return (
         <header {...props} className={cx("relative z-1 w-full px-4 pt-6 md:px-6", className)}>
-            {children}
+            <div className="min-w-0 pr-12">{children}</div>
             <CloseButton size="sm" className="absolute top-3 right-3 shrink-0" onClick={onClose} />
         </header>
     );

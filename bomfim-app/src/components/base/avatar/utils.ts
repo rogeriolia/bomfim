@@ -10,3 +10,15 @@ export const getInitials = (name: string) => {
     const [firstName, lastName] = name.split(" ");
     return firstName.charAt(0) + (lastName ? lastName.charAt(0) : "");
 };
+
+/** Up to one initial per word (e.g. "Maria Silva Costa" → "MSC"). */
+export const getInitialsFromWords = (name: string, maxWords = 3) => {
+    return name
+        .trim()
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, maxWords)
+        .map((word) => word.charAt(0))
+        .join("")
+        .toUpperCase();
+};

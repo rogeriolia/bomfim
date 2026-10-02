@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
+import { ApiError } from "@/api/client";
 import { canEditOperationalData } from "@/app/permissions";
 import { useApp } from "@/app/store";
+import { CnpjField } from "@/components/bomfim/cnpj-field";
 import { Button, ContextNavigation, DataTable, Input, PageHeading, PageState, Status } from "@/components/bomfim/ui";
+import { cnpjForSubmit, validateCnpj } from "@/utils/cnpj";
 import { integrations, stages } from "@/data/mocks/registrations";
 
 export default function ClienteDetailPage() {
@@ -13,6 +16,7 @@ export default function ClienteDetailPage() {
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(r?.name || "");
     const [cnpj, setCnpj] = useState(r?.cnpj || "");
+    const [formError, setFormError] = useState("");
     if (!r)
         return (
             <div className="page empty">
@@ -45,17 +49,36 @@ export default function ClienteDetailPage() {
                         className="panel form-stack"
                         onSubmit={async (e) => {
                             e.preventDefault();
+                            setFormError("");
+                            const cnpjToSave = cnpjForSubmit(cnpj);
+                            const cnpjErr = validateCnpj(cnpjToSave);
+                            if (cnpjErr) {
+                                setFormError(cnpjErr);
+                                return;
+                            }
                             try {
-                                await update(r.id, { name, cnpj });
+                                await update(r.id, { name, cnpj: cnpjToSave });
                                 notify("Dados atualizados.");
                                 setEditing(false);
-                            } catch {
-                                notify("Não foi possível salvar. Verifique a API.");
+                            } catch (err) {
+                                setFormError(err instanceof ApiError ? err.message : "Não foi possível salvar.");
                             }
                         }}
                     >
                         <Input label="Razão social" isRequired value={name} onChange={setName} />
-                        <Input label="CNPJ" isRequired value={cnpj} onChange={setCnpj} />
+                        <CnpjField
+                            isRequired
+                            value={cnpj}
+                            onChange={setCnpj}
+                            onLookup={(data) => {
+                                if (data.name) setName(data.name);
+                            }}
+                        />
+                        {formError && (
+                            <p role="alert" className="error-text">
+                                {formError}
+                            </p>
+                        )}
                         <Button type="submit">Salvar alterações</Button>
                     </form>
                 ) : section === "documentos" ? (

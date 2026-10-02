@@ -148,9 +148,12 @@ def run_seed() -> None:
         user_by_name[name] = user
     db.session.flush()
 
+    from bomfim.cnpj import cnpj_for_demo_index
+
     for i, company in enumerate(NAMES):
-        cnpj = f"{str(12 + i).zfill(2)}.345.678/0001-{str(90 - i)}"
-        reg = Registration.query.filter_by(cnpj=cnpj).first()
+        cnpj = cnpj_for_demo_index(i)
+        old_cnpj = f"{str(12 + i).zfill(2)}.345.678/0001-{str(90 - i)}"
+        reg = Registration.query.filter((Registration.name == company) | (Registration.cnpj.in_([cnpj, old_cnpj]))).first()
         promoter_name = PROMOTERS[i % 3]
         owner_name = OWNERS[i % 3]
         promoter = user_by_name.get(promoter_name) or user_by_name.get("Ana Ferreira")
@@ -176,6 +179,7 @@ def run_seed() -> None:
             db.session.add(reg)
         else:
             reg.name = company
+            reg.cnpj = cnpj
             reg.price_table = TABLES[i % 3]
             reg.stage_id = stage.id
             reg.city = CITIES[i % 3]

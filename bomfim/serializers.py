@@ -23,6 +23,7 @@ def user_to_json(user: User) -> dict:
         "unit": user.unit.name if user.unit else None,
         "status": user.status,
         "last_access_at": user.last_access_at.isoformat() if user.last_access_at else None,
+        "photo": user.photo,
     }
 
 
