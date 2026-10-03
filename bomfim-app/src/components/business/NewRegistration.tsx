@@ -11,6 +11,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
     const [name, setName] = useState("");
     const [cnpj, setCnpj] = useState("");
     const [city, setCity] = useState("Salvador, BA");
+    const [usuarioSsw, setUsuarioSsw] = useState("");
     const [error, setError] = useState("");
     const [formKey, setFormKey] = useState(0);
 
@@ -19,6 +20,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
         setName("");
         setCnpj("");
         setCity("Salvador, BA");
+        setUsuarioSsw("");
         setError("");
         setFormKey((k) => k + 1);
     }, [open]);
@@ -59,6 +61,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
                                     city,
                                     unit: "Salvador",
                                     table: "Capital Express",
+                                    usuario_ssw: usuarioSsw.trim() || undefined,
                                     updated: "2026-09-30",
                                     documents: 0,
                                     comments: 0,
@@ -67,6 +70,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
                                 setName("");
                                 setCnpj("");
                                 setCity("Salvador, BA");
+                                setUsuarioSsw("");
                                 onClose();
                             } catch (err) {
                                 setError(err instanceof ApiError ? err.message : "Não foi possível criar o cadastro.");
@@ -85,6 +89,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
                             if (data.city) setCity(data.city);
                         }}
                     />
+                    <Input label="Usuário SSW" value={usuarioSsw} onChange={setUsuarioSsw} placeholder="Opcional" />
                     {error && (
                         <p role="alert" className="error-text">
                             {error}

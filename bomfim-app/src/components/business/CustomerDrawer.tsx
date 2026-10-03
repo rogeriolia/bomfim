@@ -36,6 +36,7 @@ export function CustomerDrawer({ record, onClose }: { record: Registration | nul
                                     ["Tabela de preços", record.table],
                                     ["Promotor", record.promoter],
                                     ["Responsável", record.owner],
+                                    ["Usuário SSW", record.usuario_ssw || "—"],
                                 ].map(([a, b]) => (
                                     <div key={a}>
                                         <dt>{a}</dt>

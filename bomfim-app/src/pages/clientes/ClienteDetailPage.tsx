@@ -16,6 +16,7 @@ export default function ClienteDetailPage() {
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(r?.name || "");
     const [cnpj, setCnpj] = useState(r?.cnpj || "");
+    const [usuarioSsw, setUsuarioSsw] = useState(r?.usuario_ssw || "");
     const [formError, setFormError] = useState("");
     if (!r)
         return (
@@ -32,7 +33,18 @@ export default function ClienteDetailPage() {
             <PageHeading title={r.name} description={`${r.cnpj} · ${r.city}`}>
                 <Status>{stages[r.stage]}</Status>
                 {canEdit && (
-                    <Button color="secondary" size="sm" onClick={() => setEditing(!editing)}>
+                    <Button
+                        color="secondary"
+                        size="sm"
+                        onClick={() => {
+                            if (!editing && r) {
+                                setName(r.name);
+                                setCnpj(r.cnpj);
+                                setUsuarioSsw(r.usuario_ssw || "");
+                            }
+                            setEditing(!editing);
+                        }}
+                    >
                         {editing ? "Cancelar" : "Editar cadastro"}
                     </Button>
                 )}
@@ -57,7 +69,7 @@ export default function ClienteDetailPage() {
                                 return;
                             }
                             try {
-                                await update(r.id, { name, cnpj: cnpjToSave });
+                                await update(r.id, { name, cnpj: cnpjToSave, usuario_ssw: usuarioSsw.trim() });
                                 notify("Dados atualizados.");
                                 setEditing(false);
                             } catch (err) {
@@ -74,6 +86,7 @@ export default function ClienteDetailPage() {
                                 if (data.name) setName(data.name);
                             }}
                         />
+                        <Input label="Usuário SSW" value={usuarioSsw} onChange={setUsuarioSsw} placeholder="Opcional" />
                         {formError && (
                             <p role="alert" className="error-text">
                                 {formError}
@@ -132,6 +145,7 @@ export default function ClienteDetailPage() {
                                     ["Tabela de preços", r.table],
                                     ["Promotor", r.promoter],
                                     ["Responsável", r.owner],
+                                    ["Usuário SSW", r.usuario_ssw || "—"],
                                 ].map(([a, b]) => (
                                     <div key={a}>
                                         <dt>{a}</dt>

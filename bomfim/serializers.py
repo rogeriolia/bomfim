@@ -37,6 +37,7 @@ def registration_to_json(reg: Registration) -> dict:
         "owner": reg.owner.name if reg.owner else "",
         "table": reg.price_table or "",
         "tipo_cobranca": reg.price_table or "",
+        "usuario_ssw": reg.usuario_ssw or "",
         "stage": reg.stage.sort_order if reg.stage else 0,
         "city": reg.city,
         "unit": reg.unit.name if reg.unit else "",

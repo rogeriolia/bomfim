@@ -87,6 +87,7 @@ class Registration(db.Model):
     contact_email = db.Column(db.String(255), nullable=True)
     postal_code = db.Column(db.String(16), nullable=True)
     contact_name = db.Column(db.String(255), nullable=True)
+    usuario_ssw = db.Column(db.String(128), nullable=True)
     price_table = db.Column(db.String(128), nullable=False)
     stage_id = db.Column(db.Integer, db.ForeignKey("registration_stages.id"), nullable=False)
     city = db.Column(db.String(255), nullable=False)

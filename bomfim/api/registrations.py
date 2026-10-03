@@ -26,6 +26,11 @@ def _resolve_user_by_name(name: str) -> User | None:
     return User.query.filter_by(name=name).first()
 
 
+def _optional_text(value: object) -> str | None:
+    text = str(value or "").strip()
+    return text or None
+
+
 def _cnpj_conflict(cnpj: str, exclude_id: int | None = None) -> bool:
     q = Registration.query.filter_by(cnpj=cnpj)
     if exclude_id is not None:
@@ -76,6 +81,7 @@ def create_registration():
         organization_id=unit.organization_id,
         name=name,
         cnpj=cnpj,
+        usuario_ssw=_optional_text(data.get("usuario_ssw")),
         price_table=data.get("table") or "Capital Express",
         stage_id=stage.id if stage else 1,
         city=data.get("city") or unit.locality,
@@ -116,6 +122,8 @@ def patch_registration(reg_id: int):
         reg.price_table = data["table"]
     if "city" in data:
         reg.city = data["city"]
+    if "usuario_ssw" in data:
+        reg.usuario_ssw = _optional_text(data.get("usuario_ssw"))
     if "documents" in data:
         reg.documents_count = int(data["documents"])
     if "comments" in data:

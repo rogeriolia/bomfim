@@ -15,7 +15,7 @@ export function CustomerList() {
     const [page, setPage] = useState(0);
     const rows = records.filter(
         (r) =>
-            (r.name + r.cnpj + r.owner).toLowerCase().includes(search.toLowerCase()) &&
+            (r.name + r.cnpj + r.owner + (r.usuario_ssw || "")).toLowerCase().includes(search.toLowerCase()) &&
             (stage === "all" || r.stage === Number(stage)) &&
             (promoter === "all" || r.promoter === promoter) &&
             (unit === "all" || r.unit === unit) &&
@@ -50,7 +50,7 @@ export function CustomerList() {
             </SearchFilter>
             <DataTable
                 title="Clientes"
-                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Tipo cobrança", "Status", "Atualização"]}
+                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Usuário SSW", "Tipo cobrança", "Status", "Atualização"]}
                 rows={rows.slice(current * 8, current * 8 + 8).map((r) => [
                     <Link to={"/clientes/" + r.id}>
                         <CompanyIdentity name={r.name} />
@@ -58,6 +58,7 @@ export function CustomerList() {
                     r.cnpj,
                     r.owner,
                     r.promoter || "Usuário Bomfim",
+                    r.usuario_ssw || "—",
                     <span className="tipo-cobranca">{r.tipo_cobranca || r.table || "—"}</span>,
                     <Status>{stages[r.stage]}</Status>,
                     r.updated.split("-").reverse().join("/"),
