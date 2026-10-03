@@ -57,7 +57,7 @@ python run.py
 
 Isso sobe a API Flask (`:5001`) e o Vite (`:5173`) juntos. Abra [http://localhost:5173/login](http://localhost:5173/login) — e-mail + senha (sem perfil demonstrativo).
 
-Login seed: `renata@bomfim.com.br` / `123456789`
+Login seed: `rogerio+adm@4lia.com.br` / `123456789`
 
 Opcional (só API ou só front):
 

@@ -25,9 +25,10 @@ export function CnpjField({ label = "CNPJ", value, onChange, onLookup, isRequire
         }
     }, [value]);
 
-    const runLookup = async () => {
-        const normalized = normalizeCnpjForSave(value);
-        if (normalized !== value) onChange(normalized);
+    const runLookup = async (raw?: string) => {
+        const source = raw ?? value;
+        const normalized = normalizeCnpjForSave(source);
+        if (normalized !== source) onChange(normalized);
         const err = validateCnpj(normalized);
         if (err) {
             setInvalid(true);
@@ -65,17 +66,21 @@ export function CnpjField({ label = "CNPJ", value, onChange, onLookup, isRequire
                 }}
                 onBlur={() => {
                     const normalized = normalizeCnpjForSave(value);
-                    if (normalized !== value) {
-                        onChange(normalized);
-                        setHint("CNPJ da demonstração atualizado para o formato válido.");
+                    if (normalized !== value) onChange(normalized);
+                    const err = validateCnpj(normalized);
+                    if (err) {
+                        setInvalid(true);
+                        setHint(err);
+                        return;
                     }
+                    void runLookup(normalized);
                 }}
                 isInvalid={invalid}
                 hint={hint || undefined}
                 placeholder="11.444.777/0001-61"
                 inputMode="numeric"
             />
-            <Button type="button" size="sm" color="secondary" iconLeading={SearchLg} isLoading={loading} onClick={() => void runLookup()}>
+            <Button type="button" size="sm" color="secondary" iconLeading={SearchLg} isLoading={loading} onClick={() => void runLookup(undefined)}>
                 Consultar Receita Federal
             </Button>
         </div>

@@ -19,7 +19,7 @@ export function CustomerList() {
             (stage === "all" || r.stage === Number(stage)) &&
             (promoter === "all" || r.promoter === promoter) &&
             (unit === "all" || r.unit === unit) &&
-            (table === "all" || r.table === table),
+            (table === "all" || (r.tipo_cobranca || r.table) === table),
     );
     const pages = Math.max(1, Math.ceil(rows.length / 8));
     const current = Math.min(page, pages - 1);
@@ -41,19 +41,24 @@ export function CustomerList() {
                 />
                 <Choice label="Promotor" value={promoter} onChange={setPromoter} items={options(records.map((r) => r.promoter))} />
                 <Choice label="Unidade" value={unit} onChange={setUnit} items={options(records.map((r) => r.unit))} />
-                <Choice label="Tabela" value={table} onChange={setTable} items={options(records.map((r) => r.table))} />
+                <Choice
+                    label="Tipo cobrança"
+                    value={table}
+                    onChange={setTable}
+                    items={options(records.map((r) => r.tipo_cobranca || r.table))}
+                />
             </SearchFilter>
             <DataTable
                 title="Clientes"
-                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Tabela", "Status", "Atualização"]}
+                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Tipo cobrança", "Status", "Atualização"]}
                 rows={rows.slice(current * 8, current * 8 + 8).map((r) => [
                     <Link to={"/clientes/" + r.id}>
                         <CompanyIdentity name={r.name} />
                     </Link>,
                     r.cnpj,
                     r.owner,
-                    r.promoter,
-                    r.table,
+                    r.promoter || "Usuário Bomfim",
+                    <span className="tipo-cobranca">{r.tipo_cobranca || r.table || "—"}</span>,
                     <Status>{stages[r.stage]}</Status>,
                     r.updated.split("-").reverse().join("/"),
                 ])}

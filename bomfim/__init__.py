@@ -7,7 +7,7 @@ from flask import Flask
 from flask_cors import CORS
 
 from bomfim.api import register_blueprints
-from bomfim.config import config_by_name
+from bomfim.config import _database_uri, _engine_options, config_by_name
 from bomfim.extensions import db, migrate
 
 
@@ -16,6 +16,8 @@ def create_app(config_name: str | None = None) -> Flask:
     app = Flask(__name__)
     cfg = config_by_name.get(config_name or os.environ.get("FLASK_CONFIG", "default"), config_by_name["default"])
     app.config.from_object(cfg)
+    app.config["SQLALCHEMY_DATABASE_URI"] = _database_uri()
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = _engine_options()
 
     CORS(app, resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}}, supports_credentials=True)
 

@@ -7,6 +7,7 @@ from flask import Blueprint, jsonify, request
 from sqlalchemy.exc import IntegrityError
 
 from bomfim.cnpj import parse_cnpj
+from bomfim.default_owner import ensure_default_owner_user
 from bomfim.extensions import db
 from bomfim.models import Registration, RegistrationStage, Unit, User
 from bomfim.security import login_required
@@ -69,7 +70,7 @@ def create_registration():
         return jsonify({"error": "Unidade inválida."}), 400
 
     promoter = _resolve_user_by_name(data.get("promoter", "")) or User.query.filter_by(role="promoter").first()
-    owner = _resolve_user_by_name(data.get("owner", "")) or User.query.filter_by(role="manager").first()
+    owner = _resolve_user_by_name(data.get("owner", "")) or ensure_default_owner_user()
 
     reg = Registration(
         organization_id=unit.organization_id,

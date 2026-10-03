@@ -35,12 +35,64 @@ UNITS = [
     ("Aracaju", "AJU", "Aracaju, SE", "Lucas Almeida"),
 ]
 
+APP_USERS = [
+    ("Rogério — Administrador", "rogerio+adm@4lia.com.br", "admin"),
+    ("Rogério — Gestor", "rogerio+gest@4lia.com.br", "manager"),
+    ("Rogério — Operador", "rogerio+oper@4lia.com.br", "operator"),
+    ("Rogério — Promotor", "rogerio+prom@4lia.com.br", "promoter"),
+]
+
 USERS = [
     ("Renata Melo", "renata@bomfim.com.br", "admin", "Salvador"),
     ("Mariana Costa", "mariana@bomfim.com.br", "manager", "Salvador"),
     ("Lucas Almeida", "lucas@bomfim.com.br", "operator", "Aracaju"),
     ("Ana Ferreira", "ana@bomfim.com.br", "promoter", "Feira de Santana"),
 ]
+
+
+def run_seed_users() -> None:
+    """Cria ou atualiza usuários operacionais (README); senha: DEFAULT_PASSWORD."""
+    org = Organization.query.first()
+    if org is None:
+        org = Organization(name="Bomfim")
+        db.session.add(org)
+        db.session.flush()
+
+    unit = Unit.query.filter_by(code="SSA").first() or Unit.query.order_by(Unit.id).first()
+    if unit is None:
+        unit = Unit(
+            organization_id=org.id,
+            name="Salvador",
+            code="SSA",
+            locality="Salvador, BA",
+            responsible_name="—",
+            status="active",
+        )
+        db.session.add(unit)
+        db.session.flush()
+
+    pwd_hash = hash_password(DEFAULT_PASSWORD)
+    for name, email, role in APP_USERS:
+        user = User.query.filter_by(email=email).first()
+        if user is None:
+            user = User(
+                organization_id=org.id,
+                unit_id=unit.id,
+                name=name,
+                email=email,
+                role=role,
+                password_hash=pwd_hash,
+                status="active",
+            )
+            db.session.add(user)
+        else:
+            user.name = name
+            user.role = role
+            user.unit_id = unit.id
+            user.password_hash = pwd_hash
+            user.status = "active"
+
+    db.session.commit()
 
 NAMES = [
     "Flatter Cosméticos",

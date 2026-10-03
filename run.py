@@ -217,7 +217,7 @@ def cmd_dev(port: int, *, with_api: bool = True, api_port: int = DEFAULT_API_POR
     if not (APP / "node_modules").is_dir():
         print("Instalando dependências (npm install)...")
         _npm("install")
-    extra = "Hot reload ativo.\nLogin seed: renata@bomfim.com.br / 123456789"
+    extra = "Hot reload ativo.\nLogin seed: rogerio+adm@4lia.com.br / 123456789"
     if with_api:
         extra += f"\nAPI: http://127.0.0.1:{api_port} (proxy Vite /api)"
     _banner("modo desenvolvimento (Vite + API)", port, extra)

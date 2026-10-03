@@ -55,7 +55,7 @@ export function NewRegistration({ open, onClose }: { open: boolean; onClose: () 
                                     cnpj: cnpjToSave,
                                     stage: 0,
                                     promoter: "Ana Ferreira",
-                                    owner: "Renata Melo",
+                                    owner: "Usuário Bomfim",
                                     city,
                                     unit: "Salvador",
                                     table: "Capital Express",

@@ -1,6 +1,10 @@
 import os
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 
 def _read_database_url_from_dotenv() -> str | None:
     env_file = Path(__file__).resolve().parent.parent / ".env"
@@ -15,8 +19,26 @@ def _read_database_url_from_dotenv() -> str | None:
     return None
 
 
+def _database_uri_from_db_env() -> str | None:
+    host = os.environ.get("DB_HOST")
+    if not host:
+        return None
+    from urllib.parse import quote_plus
+
+    port = os.environ.get("DB_PORT", "5432")
+    user = os.environ.get("DB_USER", "postgres")
+    password = os.environ.get("DB_PASSWORD", "")
+    name = os.environ.get("DB_NAME", "bomfim")
+    return f"postgresql+psycopg2://{quote_plus(user)}:{quote_plus(password)}@{host}:{port}/{name}"
+
+
 def _database_uri() -> str:
-    url = os.environ.get("DATABASE_URL") or _read_database_url_from_dotenv() or "postgresql://postgres:postgres@localhost:5432/bomfim"
+    url = (
+        os.environ.get("DATABASE_URL")
+        or _read_database_url_from_dotenv()
+        or _database_uri_from_db_env()
+        or "postgresql://postgres:postgres@localhost:5432/bomfim"
+    )
     if url.rstrip("/").endswith("/postgres"):
         url = url.rstrip("/").rsplit("/", 1)[0] + "/bomfim"
     if url.startswith("postgresql://"):
@@ -24,9 +46,18 @@ def _database_uri() -> str:
     return url
 
 
+def _engine_options() -> dict:
+    connect_args: dict = {"connect_timeout": int(os.environ.get("DB_CONNECT_TIMEOUT", "15"))}
+    sslmode = (os.environ.get("DB_SSLMODE") or "").strip()
+    if sslmode:
+        connect_args["sslmode"] = sslmode
+    return {"connect_args": connect_args}
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "bomfim-dev-secret-change-in-production")
     SQLALCHEMY_DATABASE_URI = _database_uri()
+    SQLALCHEMY_ENGINE_OPTIONS = _engine_options()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_EXPIRY_HOURS = int(os.environ.get("JWT_EXPIRY_HOURS", "24"))
     CORS_ORIGINS = os.environ.get(

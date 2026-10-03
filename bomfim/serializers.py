@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bomfim.default_owner import DEFAULT_OWNER_NAME
 from bomfim.models import (
     AuditLog,
     Document,
@@ -32,9 +33,10 @@ def registration_to_json(reg: Registration) -> dict:
         "id": str(reg.id),
         "name": reg.name,
         "cnpj": reg.cnpj,
-        "promoter": reg.promoter.name if reg.promoter else "",
+        "promoter": reg.promoter.name if reg.promoter else DEFAULT_OWNER_NAME,
         "owner": reg.owner.name if reg.owner else "",
-        "table": reg.price_table,
+        "table": reg.price_table or "",
+        "tipo_cobranca": reg.price_table or "",
         "stage": reg.stage.sort_order if reg.stage else 0,
         "city": reg.city,
         "unit": reg.unit.name if reg.unit else "",

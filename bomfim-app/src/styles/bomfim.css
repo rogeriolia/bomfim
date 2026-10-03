@@ -473,6 +473,24 @@ main {
 .table-scroll th {
     font-size: 12px;
 }
+.bomfim-data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.bomfim-data-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-weight: 600;
+    color: var(--bomfim-navy-600);
+    background: var(--bomfim-navy-50);
+    border-bottom: 1px solid var(--bomfim-border);
+}
+.bomfim-data-table td {
+    padding: 12px 16px;
+    color: var(--bomfim-navy-800);
+    border-bottom: 1px solid var(--bomfim-border);
+    vertical-align: middle;
+}
 .company-identity {
     display: flex;
     align-items: center;

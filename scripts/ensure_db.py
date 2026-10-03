@@ -8,15 +8,10 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
 
 load_dotenv()
-url = os.environ.get("DATABASE_URL", "")
-if not url:
-    print("DATABASE_URL not set", file=sys.stderr)
-    sys.exit(1)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from scripts.db_url import sqlalchemy_url
 
-base = url.rsplit("/", 1)[0] + "/postgres"
-if base.startswith("postgresql://"):
-    base = base.replace("postgresql://", "postgresql+psycopg2://", 1)
-engine = create_engine(base, isolation_level="AUTOCOMMIT")
+engine = create_engine(sqlalchemy_url(maintenance=True), isolation_level="AUTOCOMMIT")
 with engine.connect() as conn:
     exists = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = 'bomfim'")).scalar()
     if not exists:

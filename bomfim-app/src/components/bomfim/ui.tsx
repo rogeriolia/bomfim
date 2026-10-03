@@ -2,7 +2,7 @@ import { type ReactNode, useState } from "react";
 import { AlertCircle, ArrowUpRight, CheckCircle, Download01, FilterLines, SearchLg } from "@untitledui/icons";
 import { NavLink } from "react-router";
 import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
-import { Table, TableCard } from "@/components/application/table/table";
+import { TableCard } from "@/components/application/table/table";
 import { Badge } from "@/components/base/badges/badges";
 import { cx } from "@/utils/cx";
 import { Button } from "@/components/base/buttons/button";
@@ -85,20 +85,32 @@ export function DataTable({ title, columns, rows }: { title: string; columns: st
     return (
         <TableCard.Root size="sm">
             <div className="table-scroll">
-                <Table aria-label={title}>
-                    <Table.Header columns={columns.map((label, i) => ({ id: "column-" + i, label }))}>
-                        {(column) => <Table.Head id={column.id} isRowHeader={column.id === "column-0"} label={column.label} />}
-                    </Table.Header>
-                    <Table.Body renderEmptyState={() => <div className="empty">Nenhum registro encontrado.</div>}>
-                        {rows.map((r, i) => (
-                            <Table.Row key={i} id={"row-" + i}>
-                                {r.map((v, j) => (
-                                    <Table.Cell key={j}>{v}</Table.Cell>
-                                ))}
-                            </Table.Row>
-                        ))}
-                    </Table.Body>
-                </Table>
+                <table className="bomfim-data-table" aria-label={title}>
+                    <thead>
+                        <tr>
+                            {columns.map((label) => (
+                                <th key={label}>{label}</th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.length === 0 ? (
+                            <tr>
+                                <td colSpan={columns.length}>
+                                    <div className="empty">Nenhum registro encontrado.</div>
+                                </td>
+                            </tr>
+                        ) : (
+                            rows.map((r, i) => (
+                                <tr key={i}>
+                                    {columns.map((label, j) => (
+                                        <td key={`${i}-${label}`}>{r[j] ?? "—"}</td>
+                                    ))}
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
         </TableCard.Root>
     );
