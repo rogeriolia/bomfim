@@ -33,6 +33,9 @@
         "tailwindcss-animate": "^1.0.7",
         "tailwindcss-react-aria-components": "^2.2.0"
     },
+    "overrides": {
+        "postcss-selector-parser": "^7.1.6"
+    },
     "devDependencies": {
         "@trivago/prettier-plugin-sort-imports": "^6.0.2",
         "@types/node": "^26.6.3",

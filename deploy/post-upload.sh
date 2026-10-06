@@ -59,10 +59,13 @@ if [[ "$SKIP_FRONTEND" != "1" ]]; then
         exit 1
     fi
     cd "$ROOT/bomfim-app"
+    # Sem fund/audit no servidor: lockfile versionado já traz versões corrigidas.
+    export NPM_CONFIG_FUND=false
+    export NPM_CONFIG_AUDIT=false
     if [[ -f package-lock.json ]]; then
-        npm ci
+        npm ci --no-fund --no-audit
     else
-        npm install
+        npm install --no-fund --no-audit
     fi
     npm run build
     cd "$ROOT"
