@@ -1,0 +1,29 @@
+# /etc/systemd/system/bomfim-api.service
+# Ajuste WorkingDirectory, User e caminhos do venv.
+
+[Unit]
+Description=Bomfim API (Flask + gunicorn)
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/bomfim
+EnvironmentFile=/var/www/bomfim/.env
+Environment=FLASK_APP=manage.py
+Environment=FLASK_CONFIG=production
+Environment=FLASK_DEBUG=0
+ExecStart=/var/www/bomfim/.venv/bin/gunicorn \
+  --workers 2 \
+  --bind 127.0.0.1:5001 \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile - \
+  manage:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

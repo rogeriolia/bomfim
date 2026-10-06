@@ -10,7 +10,7 @@ import { Button, Input } from "@/components/bomfim/ui";
 export default function LoginPage() {
     const { user, login } = useApp();
     const navigate = useNavigate();
-    const [email, setEmail] = useState("renata@bomfim.com.br");
+    const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [remember, setRemember] = useState(false);
     const [error, setError] = useState("");

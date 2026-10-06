@@ -1,12 +1,31 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router";
-import { ApiError } from "@/api/client";
+import { ApiError, api, type ApiUser } from "@/api/client";
 import { canEditOperationalData } from "@/app/permissions";
 import { useApp } from "@/app/store";
 import { CnpjField } from "@/components/bomfim/cnpj-field";
-import { Button, ContextNavigation, DataTable, Input, PageHeading, PageState, Status } from "@/components/bomfim/ui";
+import { Button, Choice, ContextNavigation, DataTable, Input, PageHeading, PageState, Status } from "@/components/bomfim/ui";
 import { cnpjForSubmit, validateCnpj } from "@/utils/cnpj";
 import { integrations, stages } from "@/data/mocks/registrations";
+
+const PRICE_TABLES = ["Capital Express", "Interior Premium", "Regional Standard"];
+
+function uniqueChoiceItems(values: string[], current: string) {
+    const set = new Set([...values, current].filter(Boolean));
+    return Array.from(set).map((s) => ({ id: s, label: s }));
+}
+
+function userChoiceItems(users: ApiUser[], current: string) {
+    const names = new Set(users.map((u) => u.name));
+    if (current) names.add(current);
+    return Array.from(names)
+        .sort((a, b) => a.localeCompare(b, "pt-BR"))
+        .map((name) => ({ id: name, label: name }));
+}
+
+function registrationTable(reg: { table?: string; tipo_cobranca?: string }) {
+    return reg.table || reg.tipo_cobranca || "";
+}
 
 export default function ClienteDetailPage() {
     const { id, section = "visao-geral" } = useParams();
@@ -16,8 +35,62 @@ export default function ClienteDetailPage() {
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(r?.name || "");
     const [cnpj, setCnpj] = useState(r?.cnpj || "");
+    const [unit, setUnit] = useState(r?.unit || "");
+    const [table, setTable] = useState(r ? registrationTable(r) : "");
+    const [promoter, setPromoter] = useState(r?.promoter || "");
+    const [owner, setOwner] = useState(r?.owner || "");
     const [usuarioSsw, setUsuarioSsw] = useState(r?.usuario_ssw || "");
     const [formError, setFormError] = useState("");
+    const [unitNames, setUnitNames] = useState<string[]>([]);
+    const [apiUsers, setApiUsers] = useState<ApiUser[]>([]);
+
+    useEffect(() => {
+        if (!editing || !canEdit) return;
+        let cancelled = false;
+        void (async () => {
+            try {
+                const [units, users] = await Promise.all([api.listUnits(), api.listUsers()]);
+                if (cancelled) return;
+                setUnitNames(units.map((u) => u.name));
+                setApiUsers(users);
+            } catch {
+                if (!cancelled) {
+                    setUnitNames([]);
+                    setApiUsers([]);
+                }
+            }
+        })();
+        return () => {
+            cancelled = true;
+        };
+    }, [editing, canEdit]);
+
+    const unitItems = useMemo(() => uniqueChoiceItems(unitNames, unit), [unitNames, unit]);
+    const tableItems = useMemo(() => uniqueChoiceItems([...PRICE_TABLES], table), [table]);
+    const promoterItems = useMemo(
+        () => userChoiceItems(apiUsers.filter((u) => u.role === "promoter" && u.status !== "inactive"), promoter),
+        [apiUsers, promoter],
+    );
+    const ownerItems = useMemo(
+        () =>
+            userChoiceItems(
+                apiUsers.filter((u) => u.status !== "inactive" && u.role !== "promoter"),
+                owner,
+            ),
+        [apiUsers, owner],
+    );
+
+    const resetFormFromRecord = () => {
+        if (!r) return;
+        setName(r.name);
+        setCnpj(r.cnpj);
+        setUnit(r.unit);
+        setTable(registrationTable(r));
+        setPromoter(r.promoter);
+        setOwner(r.owner);
+        setUsuarioSsw(r.usuario_ssw || "");
+    };
+
     if (!r)
         return (
             <div className="page empty">
@@ -37,10 +110,8 @@ export default function ClienteDetailPage() {
                         color="secondary"
                         size="sm"
                         onClick={() => {
-                            if (!editing && r) {
-                                setName(r.name);
-                                setCnpj(r.cnpj);
-                                setUsuarioSsw(r.usuario_ssw || "");
+                            if (!editing) {
+                                resetFormFromRecord();
                             }
                             setEditing(!editing);
                         }}
@@ -69,7 +140,15 @@ export default function ClienteDetailPage() {
                                 return;
                             }
                             try {
-                                await update(r.id, { name, cnpj: cnpjToSave, usuario_ssw: usuarioSsw.trim() });
+                                await update(r.id, {
+                                    name,
+                                    cnpj: cnpjToSave,
+                                    unit,
+                                    table,
+                                    promoter,
+                                    owner,
+                                    usuario_ssw: usuarioSsw.trim(),
+                                });
                                 notify("Dados atualizados.");
                                 setEditing(false);
                             } catch (err) {
@@ -86,6 +165,10 @@ export default function ClienteDetailPage() {
                                 if (data.name) setName(data.name);
                             }}
                         />
+                        <Choice label="Unidade" value={unit} onChange={setUnit} items={unitItems} />
+                        <Choice label="Tabela de preços" value={table} onChange={setTable} items={tableItems} />
+                        <Choice label="Promotor" value={promoter} onChange={setPromoter} items={promoterItems} />
+                        <Choice label="Responsável" value={owner} onChange={setOwner} items={ownerItems} />
                         <Input label="Usuário SSW" value={usuarioSsw} onChange={setUsuarioSsw} placeholder="Opcional" />
                         {formError && (
                             <p role="alert" className="error-text">

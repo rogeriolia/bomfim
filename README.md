@@ -115,6 +115,16 @@ npm run preview
 
 SPA: [`bomfim-app/docs/deploy-spa.md`](bomfim-app/docs/deploy-spa.md).
 
+## Deploy no servidor (VPS)
+
+Após enviar os arquivos para o servidor:
+
+```bash
+bash deploy/post-upload.sh
+```
+
+Instala dependências, migra o banco, **builda o front** (`bomfim-app/dist`), reinicia API (gunicorn) e recarrega Nginx. Detalhes, systemd e Nginx: [`deploy/README.md`](deploy/README.md).
+
 ## Stack
 
 - Untitled UI React, React Router 8
