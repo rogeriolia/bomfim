@@ -16,9 +16,7 @@ RELOAD_NGINX="${RELOAD_NGINX:-1}"
 RUN_SEED="${RUN_SEED:-0}"
 SKIP_FRONTEND="${SKIP_FRONTEND:-0}"
 API_PORT="${API_PORT:-5001}"
-
-PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
-PIP="${PIP:-$ROOT/.venv/bin/pip}"
+ENSURE_VENV="${ENSURE_VENV:-1}"
 
 if [[ ! -f "$ROOT/.env" ]]; then
     echo "Erro: .env não encontrado em $ROOT/.env" >&2
@@ -26,8 +24,15 @@ if [[ ! -f "$ROOT/.env" ]]; then
     exit 1
 fi
 
+if [[ "$ENSURE_VENV" == "1" ]]; then
+    bash "$ROOT/deploy/ensure-venv.sh" "$ROOT"
+fi
+
+PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
+PIP="${PIP:-$ROOT/.venv/bin/pip}"
+
 if [[ ! -x "$PYTHON" ]]; then
-    echo "Erro: venv não encontrado. Crie: python3 -m venv .venv && .venv/bin/pip install -r requirements-prod.txt" >&2
+    echo "Erro: .venv/bin/python não encontrado. Rode: bash deploy/ensure-venv.sh $ROOT" >&2
     exit 1
 fi
 

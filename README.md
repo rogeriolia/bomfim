@@ -115,15 +115,24 @@ npm run preview
 
 SPA: [`bomfim-app/docs/deploy-spa.md`](bomfim-app/docs/deploy-spa.md).
 
-## Deploy no servidor (VPS)
+## Git e deploy
 
-Após enviar os arquivos para o servidor:
+**PC (publicar):**
 
-```bash
-bash deploy/post-upload.sh
+```powershell
+git add .
+git commit -m "feat: sua mensagem"
+git push origin main
 ```
 
-Instala dependências, migra o banco, **builda o front** (`bomfim-app/dist`), reinicia API (gunicorn) e recarrega Nginx. Detalhes, systemd e Nginx: [`deploy/README.md`](deploy/README.md).
+**Servidor (atualizar):**
+
+```bash
+cd /var/www/bomfim
+bash deploy/deploy.sh
+```
+
+Isso faz `git pull`, garante o **`.venv`**, migra o banco, builda o front (`bomfim-app/dist`) e reinicia API/Nginx. Guia completo: [`deploy/README.md`](deploy/README.md).
 
 ## Stack
 
