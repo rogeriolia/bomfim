@@ -28,13 +28,24 @@ if [[ "$ENSURE_VENV" == "1" ]]; then
     bash "$ROOT/deploy/ensure-venv.sh" "$ROOT"
 fi
 
-PYTHON="${PYTHON:-$ROOT/.venv/bin/python}"
-PIP="${PIP:-$ROOT/.venv/bin/pip}"
+if [[ -z "${VENV_DIR:-}" ]]; then
+    if [[ -x "$ROOT/venv/bin/python" ]]; then
+        VENV_DIR=venv
+    else
+        VENV_DIR=.venv
+    fi
+fi
+
+PYTHON="${PYTHON:-$ROOT/$VENV_DIR/bin/python}"
+PIP="${PIP:-$ROOT/$VENV_DIR/bin/pip}"
 
 if [[ ! -x "$PYTHON" ]]; then
-    echo "Erro: .venv/bin/python não encontrado. Rode: bash deploy/ensure-venv.sh $ROOT" >&2
+    echo "Erro: $ROOT/$VENV_DIR/bin/python não encontrado." >&2
+    echo "  Defina VENV_DIR=venv em deploy/deploy.env ou rode: bash deploy/ensure-venv.sh $ROOT" >&2
     exit 1
 fi
+
+echo "==> Usando venv: $VENV_DIR"
 
 export FLASK_APP=manage.py
 export FLASK_CONFIG="${FLASK_CONFIG:-production}"
@@ -105,19 +116,31 @@ if [[ "$RELOAD_NGINX" == "1" ]] && command -v nginx >/dev/null 2>&1; then
 fi
 
 echo "==> Health check API (127.0.0.1:${API_PORT}/api/health)"
+health_ok=0
 if command -v curl >/dev/null 2>&1; then
-    curl -sf "http://127.0.0.1:${API_PORT}/api/health" && echo ""
+    if curl -sf "http://127.0.0.1:${API_PORT}/api/health"; then
+        echo ""
+        health_ok=1
+    fi
 else
-    "$PYTHON" - <<PY
+    if "$PYTHON" - <<PY
 import urllib.request
-import sys
-try:
-    with urllib.request.urlopen("http://127.0.0.1:${API_PORT}/api/health", timeout=10) as r:
-        print(r.read().decode())
-except Exception as e:
-    print("Health check falhou:", e, file=sys.stderr)
-    sys.exit(1)
+with urllib.request.urlopen("http://127.0.0.1:${API_PORT}/api/health", timeout=10) as r:
+    print(r.read().decode())
 PY
+    then
+        health_ok=1
+    fi
+fi
+
+if [[ "$health_ok" != "1" ]]; then
+    echo "" >&2
+    echo "ERRO: nada escutando em 127.0.0.1:${API_PORT} (Connection refused)." >&2
+    echo "  A API systemd provavelmente não está ativa ou o caminho do gunicorn está errado." >&2
+    echo "  sudo systemctl status ${BOMFIM_SERVICE} --no-pager -l" >&2
+    echo "  sudo journalctl -u ${BOMFIM_SERVICE} -n 40 --no-pager" >&2
+    echo "  Ajuste /etc/systemd/system/${BOMFIM_SERVICE}.service (WorkingDirectory + ExecStart)." >&2
+    exit 1
 fi
 
 echo "Deploy concluído."

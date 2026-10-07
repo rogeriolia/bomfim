@@ -55,10 +55,40 @@ def lookup_cnpj_receita(raw: str) -> tuple[dict | None, str | None]:
     trade_name = (data.get("fantasia") or "").strip()
     name = (data.get("nome") or "").strip()
 
+    def _text(key: str) -> str:
+        return (data.get(key) or "").strip()
+
+    main_activity = data.get("atividade_principal") or []
+    secondary_activities = data.get("atividades_secundarias") or []
+    qsa = data.get("qsa") or []
+
     return {
         "cnpj": format_cnpj(digits),
         "name": name,
         "trade_name": trade_name or name,
         "city": city_label,
-        "status": (data.get("situacao") or "").strip(),
+        "status": _text("situacao"),
+        "tipo": _text("tipo"),
+        "opening_date": _text("abertura"),
+        "legal_nature": _text("natureza_juridica"),
+        "company_size": _text("porte"),
+        "share_capital": _text("capital_social"),
+        "street": _text("logradouro"),
+        "street_number": _text("numero"),
+        "complement": _text("complemento"),
+        "district": _text("bairro"),
+        "zip_code": _text("cep"),
+        "municipality": city,
+        "state": uf,
+        "email": _text("email"),
+        "phone": _text("telefone"),
+        "situation": _text("situacao"),
+        "situation_date": _text("data_situacao"),
+        "situation_reason": _text("motivo_situacao"),
+        "special_situation": _text("situacao_especial"),
+        "special_situation_date": _text("data_situacao_especial"),
+        "efr": _text("efr"),
+        "main_activity": main_activity,
+        "secondary_activities": secondary_activities,
+        "qsa": qsa,
     }, None

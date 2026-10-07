@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router";
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
 import { stages } from "@/data/mocks/registrations";
@@ -7,12 +7,20 @@ import { CompanyIdentity } from "./RegistrationCard";
 
 export function CustomerList() {
     const { records } = useApp();
+    const [searchParams] = useSearchParams();
+    const stageFromUrl = searchParams.get("stage");
     const [search, setSearch] = useState("");
-    const [stage, setStage] = useState("all");
+    const [stage, setStage] = useState(() => (stageFromUrl !== null && stageFromUrl !== "" ? stageFromUrl : "all"));
     const [promoter, setPromoter] = useState("all");
     const [unit, setUnit] = useState("all");
     const [table, setTable] = useState("all");
     const [page, setPage] = useState(0);
+    useEffect(() => {
+        if (stageFromUrl !== null && stageFromUrl !== "") {
+            setStage(stageFromUrl);
+            setPage(0);
+        }
+    }, [stageFromUrl]);
     const rows = records.filter(
         (r) =>
             (r.name + r.cnpj + r.owner + (r.usuario_ssw || "")).toLowerCase().includes(search.toLowerCase()) &&

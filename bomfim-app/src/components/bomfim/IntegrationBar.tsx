@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
 import { ChevronDown } from "@untitledui/icons";
-import { NavLink } from "react-router";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Button } from "@/components/bomfim/ui";
 
 const integrations: [string, string][] = [
     ["Moskit", "/moskit"],
-    ["Assinatura Digital", "/assinaturas"],
+    ["Click Sign", "/assinaturas"],
     ["Receita Federal", "/documentos"],
     ["Documentos", "/documentos"],
 ];
@@ -48,9 +47,6 @@ export function IntegrationBar() {
                     </Button>
                 ))
             )}
-            <NavLink to="/design-system" className="design-link">
-                Design System ↗
-            </NavLink>
         </div>
     );
 }

@@ -3,6 +3,7 @@ import { ArrowRight } from "@untitledui/icons";
 import { Link } from "react-router";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, ExportButton, Metric, PageHeading, PageState, Status, exportCsv } from "@/components/bomfim/ui";
+import { FunnelStagePie } from "@/components/business/funnel-stage-pie";
 import { CompanyIdentity } from "@/components/business/RegistrationCard";
 import { integrations, stages } from "@/data/mocks/registrations";
 
@@ -43,8 +44,8 @@ export default function OverviewPage() {
             )}
             <PageState>
                 <div className="metrics">
-                    {["Cadastros ativos", "Em andamento", "Aguardando assinatura", "Finalizados", "Declinados"].map((s, i) => (
-                        <Metric key={s} label={s} value={i === 0 ? shown.filter((r) => r.stage < 3).length : shown.filter((r) => r.stage === i).length} />
+                    {stages.map((s, i) => (
+                        <Metric key={s} label={s} value={shown.filter((r) => r.stage === i).length} />
                     ))}
                 </div>
                 <div className="overview-grid">
@@ -58,20 +59,7 @@ export default function OverviewPage() {
                                 Abrir funil
                             </Button>
                         </div>
-                        <div className="funnel-bars">
-                            {stages.slice(0, 4).map((s, i) => {
-                                const n = shown.filter((r) => r.stage === i).length;
-                                return (
-                                    <div key={s}>
-                                        <div className="funnel-bar" style={{ height: 50 + n * 13 }}>
-                                            <b>{n}</b>
-                                        </div>
-                                        <strong>{s.replace("Cadastro ", "")}</strong>
-                                        <span>{shown.length ? Math.round((n / shown.length) * 100) : 0}% dos cadastros</span>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                        <FunnelStagePie records={shown} stageIndices={[0, 1, 2, 3]} compact />
                         <div className="funnel-note">
                             <span className="tiny-dot" />
                             Conversão em clientes{" "}

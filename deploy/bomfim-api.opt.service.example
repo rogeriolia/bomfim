@@ -1,0 +1,28 @@
+# /etc/systemd/system/bomfim-api.service
+# Exemplo para deploy em /opt/bomfim com venv (sem ponto), como no Vultr.
+
+[Unit]
+Description=Bomfim API (Flask + gunicorn)
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/bomfim
+EnvironmentFile=/opt/bomfim/.env
+Environment=FLASK_APP=manage.py
+Environment=FLASK_CONFIG=production
+Environment=FLASK_DEBUG=0
+ExecStart=/opt/bomfim/venv/bin/gunicorn \
+  --workers 2 \
+  --bind 127.0.0.1:5001 \
+  --timeout 120 \
+  --access-logfile - \
+  --error-logfile - \
+  manage:app
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

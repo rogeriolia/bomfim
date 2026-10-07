@@ -47,12 +47,38 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     return data as T;
 }
 
+export type CnaeActivity = { code?: string; text?: string };
+export type QsaMember = { nome?: string; qual?: string; qualificacao?: string };
+
 export interface CnpjLookupResult {
     cnpj: string;
     name: string;
     trade_name: string;
     city: string;
     status: string;
+    tipo?: string;
+    opening_date?: string;
+    legal_nature?: string;
+    company_size?: string;
+    share_capital?: string;
+    street?: string;
+    street_number?: string;
+    complement?: string;
+    district?: string;
+    zip_code?: string;
+    municipality?: string;
+    state?: string;
+    email?: string;
+    phone?: string;
+    situation?: string;
+    situation_date?: string;
+    situation_reason?: string;
+    special_situation?: string;
+    special_situation_date?: string;
+    efr?: string;
+    main_activity?: CnaeActivity[];
+    secondary_activities?: CnaeActivity[];
+    qsa?: QsaMember[];
 }
 
 export interface ApiUser {

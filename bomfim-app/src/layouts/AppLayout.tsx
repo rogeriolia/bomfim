@@ -86,7 +86,7 @@ export default function AppLayout() {
                     <span /> Ambiente de demonstração
                 </div>
             </div>
-            <IntegrationBar />
+            {!pathname.startsWith("/cadastro") && <IntegrationBar />}
             <main id="main">
                 <Outlet />
             </main>

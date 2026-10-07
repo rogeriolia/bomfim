@@ -1,7 +1,7 @@
 import { demoCnpjs } from "@/utils/demo-cnpj";
 
 export const stages=['Caixa de entrada','Cadastro em andamento','Aguardando assinatura','Cadastro finalizado','Cadastros declinados'];
-export interface Registration {id:string;name:string;cnpj:string;promoter:string;owner:string;table:string;tipo_cobranca?:string;usuario_ssw?:string;stage:number;city:string;unit:string;updated:string;documents:number;comments:number;}
+export interface Registration {id:string;name:string;cnpj:string;promoter:string;owner:string;table:string;tipo_cobranca?:string;usuario_ssw?:string;contact_email?:string;postal_code?:string;contact_name?:string;stage:number;city:string;unit:string;updated:string;documents:number;comments:number;}
 const names=['Flatter Cosméticos','Avyquímica do Brasil Ltda','Tropical Bebidas','Nevvia Motos','Casali Empreendimentos','GNC Comércio de Veículos','Adiltex Indústria e Comércio','Serra Verde Alimentos','Nordeste Distribuidora','Lumiê Cosméticos','Alvorada Embalagens','Via Norte Autopeças','Solare Equipamentos','Vitta Produtos Naturais','Costa Sul Têxtil','Pontal Comércio de Materiais','Brisa Farma','Araponga Indústria'];
 
 export const initialRegistrations: Registration[] = names.map((name, i) => ({
@@ -18,4 +18,4 @@ export const initialRegistrations: Registration[] = names.map((name, i) => ({
     documents: (i % 4) + 1,
     comments: i % 3,
 }));
-export const integrations=['Moskit','Receita Federal','Assinatura Digital','Documentos'];
+export const integrations=['Moskit','Receita Federal','Click Sign','Documentos'];

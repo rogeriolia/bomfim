@@ -15,22 +15,28 @@ O `.env` **não entra** no commit (está no `.gitignore`). Secrets ficam só na 
 
 ---
 
-## No servidor (VPS) — atualizar após o push
+## No servidor (VPS) — publicar (up)
 
-Recomendado **um comando** (pull + venv + migrate + build + restart):
+Entre no SSH, vá para a pasta do projeto e rode:
 
 ```bash
-cd /var/www/bomfim
-bash deploy/deploy.sh
+cd /opt/bomfim
+bash deploy/up.sh
 ```
 
-Equivalente manual:
+(Vultr: `VENV_DIR=venv` — copie `deploy/deploy.env.vultr.example` → `deploy/deploy.env`.)
+
+Isso faz, em sequência: **`git pull origin main`** → cria/atualiza **`.venv`** → `pip install` → **`flask db upgrade`** → **`npm run build`** → reinicia API/Nginx.
+
+Se `deploy/up.sh` ainda não existir (servidor muito antigo), rode uma vez:
 
 ```bash
 cd /var/www/bomfim
-git pull origin main
+git pull --ff-only origin main
 bash deploy/post-upload.sh
 ```
+
+Depois disso, use sempre `bash deploy/up.sh`.
 
 O script **post-upload** faz:
 
@@ -136,4 +142,14 @@ API_PORT=5001
 
 ```bash
 SKIP_FRONTEND=1 bash deploy/post-upload.sh
+```
+
+---
+
+## Integração Click Sign (nome no banco)
+
+Se o servidor foi seedado antes da renomeação, atualize o rótulo no PostgreSQL:
+
+```sql
+UPDATE integrations SET name = 'Click Sign' WHERE name = 'Assinatura Digital';
 ```
