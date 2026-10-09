@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, request
 
 from bomfim.models import (
     AuditLog,
@@ -12,6 +12,7 @@ from bomfim.models import (
     SyncEvent,
     Unit,
 )
+from bomfim.integration_access import get_integration_access_status
 from bomfim.security import login_required
 from bomfim.serializers import (
     audit_log_to_json,
@@ -44,6 +45,13 @@ def list_units():
 @login_required
 def list_integrations():
     return jsonify([integration_to_json(i) for i in Integration.query.order_by(Integration.name).all()])
+
+
+@resources_bp.get("/integrations/access-status")
+@login_required
+def integrations_access_status():
+    force = request.args.get("refresh") in ("1", "true", "yes")
+    return jsonify(get_integration_access_status(force_refresh=force))
 
 
 @resources_bp.get("/audit-logs")

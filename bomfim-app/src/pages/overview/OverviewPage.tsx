@@ -14,8 +14,8 @@ export default function OverviewPage() {
     const [filters, setFilters] = useState(false);
     const shown = records.filter((r) => (period === "all" || r.updated >= "2026-09-28") && (unit === "all" || r.unit === unit));
     return (
-        <div className="page">
-            <PageHeading title="Visão Geral" eyebrow="BOM DIA, RENATA" description="Acompanhe os principais indicadores e atividades da operação.">
+        <div className="page page--overview">
+            <PageHeading title="Visão Geral" description="Acompanhe os principais indicadores e atividades da operação.">
                 <Button color="secondary" size="sm" onClick={() => setPeriod(period === "all" ? "recent" : "all")}>
                     {period === "all" ? "Setembro, 2026" : "Últimos 3 dias"}
                 </Button>
@@ -76,7 +76,7 @@ export default function OverviewPage() {
                             <span className="live-dot" />
                         </div>
                         {integrations.map((s, i) => (
-                            <Link to={["/moskit", "/documentos", "/assinaturas", "/documentos"][i]} className="integration-card" key={s}>
+                            <Link to={["/moskit", "/pipefy", "/documentos", "/assinaturas", "/zapier"][i]} className="integration-card" key={s}>
                                 <span className="integration-icon">{s.slice(0, 1)}</span>
                                 <div>
                                     <strong>{s}</strong>

@@ -134,6 +134,15 @@ DB_USER=postgres
 DB_PASSWORD=...
 SECRET_KEY=...
 API_PORT=5001
+
+# Integrações (barra CONECTADO À OPERAÇÃO) — credenciais só no servidor, nunca no Git
+PYPEFY_USUARIO=...
+PYPEFY_SENHA=...
+MOSKIT_USUARIO=...
+MOSKIT_SENHA=...
+ZAPIER_USUARIO=...
+ZAPIER_SENHA=...
+# Opcional: CLICKSIGN_ACCESS_TOKEN, MOSKIT_API_KEY, RECEITAWS_TOKEN
 ```
 
 ---
@@ -153,3 +162,35 @@ Se o servidor foi seedado antes da renomeação, atualize o rótulo no PostgreSQ
 ```sql
 UPDATE integrations SET name = 'Click Sign' WHERE name = 'Assinatura Digital';
 ```
+
+Integração Zapier (substitui Documentos na barra de integrações):
+
+```sql
+UPDATE integrations SET name = 'Zapier' WHERE name = 'Documentos';
+```
+
+Ou rode `flask db upgrade` (migração `c8d9e0f1a2b3`).
+
+Pipefy (Admin → Integrações): incluído automaticamente em `flask db upgrade` (migração `d9e0f1a2b3c4`).
+
+---
+
+## Checklist — release via Git (PC → servidor)
+
+**No PC**
+
+1. `git status` — confirme que `.env` **não** aparece (só `.env.example`).
+2. `cd bomfim-app && npm run build` (opcional; o servidor também builda).
+3. Commit e push:
+   ```powershell
+   git add -A
+   git commit -m "feat: barra de integrações, Pipefy/Zapier e status de acesso"
+   git push origin main
+   ```
+
+**No servidor**
+
+1. Atualize o `.env` com as variáveis de integração (se ainda não tiver).
+2. `cd /opt/bomfim` (ou `/var/www/bomfim`) → `bash deploy/up.sh`
+3. Confirme: `curl -s http://127.0.0.1:5001/api/health` → `{"status":"ok","db":"ok"}`
+4. Abra o app logado e confira a barra **CONECTADO À OPERAÇÃO**.

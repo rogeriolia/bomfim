@@ -8,6 +8,8 @@ from flask_cors import CORS
 
 from bomfim.api import register_blueprints
 from bomfim.config import _database_uri, _engine_options, config_by_name
+from sqlalchemy import text
+
 from bomfim.extensions import db, migrate
 
 
@@ -28,6 +30,11 @@ def create_app(config_name: str | None = None) -> Flask:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok"}
+        db_status = "ok"
+        try:
+            db.session.execute(text("SELECT 1"))
+        except Exception:
+            db_status = "error"
+        return {"status": "ok", "db": db_status}
 
     return app

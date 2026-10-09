@@ -1,7 +1,6 @@
 import { type ReactNode, useState } from "react";
-import { AlertCircle, ArrowUpRight, CheckCircle, Download01, FilterLines, SearchLg } from "@untitledui/icons";
+import { ArrowUpRight, Download01, FilterLines, SearchLg } from "@untitledui/icons";
 import { NavLink } from "react-router";
-import { LoadingIndicator } from "@/components/application/loading-indicator/loading-indicator";
 import { TableCard } from "@/components/application/table/table";
 import { Badge } from "@/components/base/badges/badges";
 import { cx } from "@/utils/cx";
@@ -59,7 +58,7 @@ export function PageHeading({ title, description, children, eyebrow }: { title: 
 }
 export function Status({ children }: { children: string }) {
     const good = /concl|final|ativo|sincronizado|ativa|aprovado|ok/i.test(children);
-    const bad = /erro|expirado|declinado|cancelado/i.test(children);
+    const bad = /erro|expirado|declinado|cancelado|inativ/i.test(children);
     return (
         <Badge size="sm" color={good ? "success" : bad ? "error" : "warning"} type="pill-color">
             {children}
@@ -152,43 +151,6 @@ export function SearchFilter({ search, setSearch, children }: { search: string; 
         </>
     );
 }
-export function PageState({ children, allowDemoControls }: { children: ReactNode; allowDemoControls?: boolean }) {
-    const [state, setState] = useState("success");
-    const showPicker = allowDemoControls ?? import.meta.env.DEV;
-    return (
-        <>
-            {showPicker && (
-                <details className="state-picker">
-                    <summary>Estados da demonstração</summary>
-                    <Choice
-                        label="Estado da página"
-                        value={state}
-                        onChange={setState}
-                        items={[
-                            { id: "success", label: "Sucesso" },
-                            { id: "loading", label: "Carregando" },
-                            { id: "empty", label: "Vazio" },
-                            { id: "error", label: "Erro" },
-                        ]}
-                    />
-                </details>
-            )}
-            {state === "success" ? (
-                children
-            ) : state === "loading" ? (
-                <div className="panel loading-panel" role="status" aria-label="Carregando">
-                    <LoadingIndicator type="line-spinner" size="md" label="Carregando dados da operação..." />
-                </div>
-            ) : (
-                <div className="panel empty">
-                    {state === "error" ? <AlertCircle /> : <CheckCircle />}
-                    <h2>{state === "error" ? "Não foi possível carregar os dados" : "Nenhum registro por aqui"}</h2>
-                    <p>{state === "error" ? "Tente novamente para continuar sua operação." : "Os novos registros serão exibidos nesta área."}</p>
-                    <Button color="secondary" size="sm" onClick={() => setState("success")}>
-                        {state === "error" ? "Tentar novamente" : "Restaurar demonstração"}
-                    </Button>
-                </div>
-            )}
-        </>
-    );
+export function PageState({ children }: { children: ReactNode }) {
+    return children;
 }

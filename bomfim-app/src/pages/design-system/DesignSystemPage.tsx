@@ -26,7 +26,7 @@ export default function DesignSystemPage() {
                 eyebrow="PRODUCT UI / PACK 01"
                 description="Identidade Bomfim. Componentes reais Untitled UI. Uma base consistente."
             />
-            <PageState allowDemoControls>
+            <PageState>
                 <section className="panel">
                     <h2>Brand</h2>
                     <div className="brand-showcase">

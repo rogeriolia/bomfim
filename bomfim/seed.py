@@ -122,7 +122,7 @@ TABLES = ["Capital Express", "Interior Premium", "Regional Standard"]
 CITIES = ["Salvador, BA", "Feira de Santana, BA", "Aracaju, SE"]
 UNIT_NAMES = ["Salvador", "Feira de Santana", "Aracaju"]
 
-INTEGRATIONS = ["Moskit", "Receita Federal", "Click Sign", "Documentos"]
+INTEGRATIONS = ["Moskit", "Pipefy", "Receita Federal", "Click Sign", "Zapier"]
 
 EMAIL_TEMPLATES = [
     ("Boas-vindas à Bomfim", "Entrada no funil", date(2026, 9, 29)),

@@ -224,6 +224,11 @@ svg {
     align-items: center;
     gap: 7px;
 }
+.integration-bar-dropdown-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+}
 .tiny-dot,
 .live-dot {
     display: inline-block;
@@ -232,6 +237,12 @@ svg {
     background: var(--bomfim-success);
     border-radius: 50%;
     flex-shrink: 0;
+}
+.tiny-dot--error {
+    background: var(--bomfim-error);
+}
+.tiny-dot--pending {
+    background: var(--bomfim-navy-300);
 }
 .live-dot {
     width: 8px;
@@ -252,6 +263,9 @@ main {
     margin: auto;
 }
 .page--cadastro {
+    padding-top: 16px;
+}
+.page--overview {
     padding-top: 16px;
 }
 .cadastro-workspace-bar {
@@ -276,7 +290,7 @@ main {
     align-items: center;
     justify-content: space-between;
     gap: 24px;
-    margin-bottom: 26px;
+    margin-bottom: 16px;
 }
 .page-heading p {
     color: var(--bomfim-navy-500);
@@ -1028,21 +1042,6 @@ dd {
     font-size: 12px;
     color: var(--bomfim-navy-500);
 }
-.state-picker {
-    font-size: 10px;
-    color: var(--bomfim-navy-400);
-    margin: -10px 0 12px;
-    text-align: right;
-}
-.state-picker summary {
-    cursor: pointer;
-    list-style: none;
-}
-.state-picker > div {
-    max-width: 250px;
-    margin: 10px 0 10px auto;
-    text-align: left;
-}
 .empty {
     padding: 70px 20px;
     display: flex;
@@ -1639,9 +1638,6 @@ dd {
     .toast {
         font-size: 12px;
         bottom: 16px;
-    }
-    .state-picker {
-        font-size: 9px;
     }
     .integration-banner {
         gap: 12px;

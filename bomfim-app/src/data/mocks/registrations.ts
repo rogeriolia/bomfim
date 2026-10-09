@@ -18,4 +18,4 @@ export const initialRegistrations: Registration[] = names.map((name, i) => ({
     documents: (i % 4) + 1,
     comments: i % 3,
 }));
-export const integrations=['Moskit','Receita Federal','Click Sign','Documentos'];
+export const integrations=['Moskit','Pipefy','Receita Federal','Click Sign','Zapier'];

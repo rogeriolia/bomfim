@@ -82,9 +82,6 @@ export default function AppLayout() {
                 <nav className="main-nav" aria-label="Navegação principal">
                     <MainNavigation role={user.role} />
                 </nav>
-                <div className="environment">
-                    <span /> Ambiente de demonstração
-                </div>
             </div>
             {!pathname.startsWith("/cadastro") && <IntegrationBar />}
             <main id="main">

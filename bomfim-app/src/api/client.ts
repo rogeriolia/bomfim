@@ -18,6 +18,14 @@ export function clearToken() {
     sessionStorage.removeItem(TOKEN_KEY);
 }
 
+export type IntegrationAccessRow = { name: string; ok: boolean; detail?: string };
+
+export type IntegrationAccessStatus = {
+    api_ok: boolean;
+    checked_at: string;
+    integrations: IntegrationAccessRow[];
+};
+
 export class ApiError extends Error {
     status: number;
     constructor(message: string, status: number) {
@@ -129,6 +137,9 @@ export const api = {
 
     listIntegrations: () =>
         request<{ id: number; name: string; active: boolean; last_sync_at: string | null }[]>("/api/integrations"),
+
+    getIntegrationAccessStatus: (refresh = false) =>
+        request<IntegrationAccessStatus>(`/api/integrations/access-status${refresh ? "?refresh=1" : ""}`),
 
     listAuditLogs: () =>
         request<{ id: number; occurred_at: string; user: string; event: string; resource: string; result: string }[]>("/api/audit-logs"),

@@ -18,6 +18,8 @@ const Clientes = lazy(() => import("@/pages/clientes/ClientesPage"));
 const Cliente = lazy(() => import("@/pages/clientes/ClienteDetailPage"));
 const Assinaturas = lazy(() => import("@/pages/assinaturas/AssinaturasPage"));
 const Moskit = lazy(() => import("@/pages/moskit/MoskitPage"));
+const Zapier = lazy(() => import("@/pages/zapier/ZapierPage"));
+const Pipefy = lazy(() => import("@/pages/pipefy/PipefyPage"));
 const Documentos = lazy(() => import("@/pages/documentos/DocumentosPage"));
 const Relatorios = lazy(() => import("@/pages/relatorios/RelatoriosPage"));
 const Admin = lazy(() => import("@/pages/admin/AdminOverviewPage"));
@@ -59,6 +61,8 @@ export function AppRoutes() {
                         <Route path="clientes/:id/:section" element={<Cliente />} />
                         <Route path="assinaturas" element={<Assinaturas />} />
                         <Route path="moskit" element={<Moskit />} />
+                        <Route path="zapier" element={<Zapier />} />
+                        <Route path="pipefy" element={<Pipefy />} />
                         <Route path="documentos" element={<Documentos />} />
                         <Route
                             element={
