@@ -15,9 +15,21 @@ O `.env` **não entra** no commit (está no `.gitignore`). Secrets ficam só na 
 
 ---
 
-## No servidor (VPS) — publicar (up)
+## No servidor (VPS) — pull via SSH (agora)
 
-Entre no SSH, vá para a pasta do projeto e rode:
+Conecte no VPS e **cole** (ajuste o caminho se não for `/opt/bomfim`):
+
+```bash
+cd /opt/bomfim
+git fetch origin
+git log -1 --oneline HEAD
+git log -1 --oneline origin/main
+bash deploy/ssh-pull.sh
+```
+
+Isso faz `git pull --ff-only origin main` + migrate + build + restart (via `post-upload.sh`).
+
+Alternativa equivalente:
 
 ```bash
 cd /opt/bomfim

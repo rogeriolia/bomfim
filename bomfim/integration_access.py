@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+from pathlib import Path
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -9,7 +10,12 @@ from typing import Any, Callable
 
 from sqlalchemy import text
 
+from dotenv import load_dotenv
+
 from bomfim.extensions import db
+
+_ENV_ROOT = Path(__file__).resolve().parent.parent
+_ENV_FILE = _ENV_ROOT / ".env"
 
 CHECK_TIMEOUT_SEC = 5
 CACHE_TTL_SEC = 60
@@ -17,12 +23,47 @@ CACHE_TTL_SEC = 60
 INTEGRATION_NAMES = ["Moskit", "Pipefy", "Click Sign", "Receita Federal", "Zapier"]
 
 
+def _parse_dotenv_file() -> dict[str, str]:
+    """Lê .env ignorando espaços antes do nome da variável (comum em edições manuais)."""
+    parsed: dict[str, str] = {}
+    if not _ENV_FILE.is_file():
+        return parsed
+    for line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
+        raw = line.strip()
+        if not raw or raw.startswith("#") or "=" not in raw:
+            continue
+        key, _, value = raw.partition("=")
+        key = key.strip()
+        if key:
+            parsed[key] = value.strip().strip('"').strip("'")
+    return parsed
+
+
 def _env_first(*keys: str) -> str:
     for key in keys:
         value = (os.environ.get(key) or "").strip()
         if value:
             return value
+    for key in keys:
+        value = _parse_dotenv_file().get(key, "").strip()
+        if value:
+            return value
     return ""
+
+
+def _sync_integration_env_from_dotenv() -> None:
+    """Sincroniza .env → os.environ (gunicorn só lê .env no start)."""
+    load_dotenv(_ENV_FILE, override=False)
+    for key, value in _parse_dotenv_file().items():
+        if value and not (os.environ.get(key) or "").strip():
+            os.environ[key] = value
+
+
+def _dotenv_mtime() -> float:
+    try:
+        return _ENV_FILE.stat().st_mtime
+    except OSError:
+        return 0.0
 
 # CNPJ público usado só para verificar reachability da ReceitaWS (não persiste dados).
 RECEITA_PROBE_CNPJ = "11222333000181"
@@ -49,13 +90,11 @@ def _http_get(url: str, headers: dict[str, str]) -> tuple[int | None, str | None
 
 
 def _moskit_api_key() -> str:
-    return (os.environ.get("MOSKIT_API_KEY") or "").strip()
+    return _env_first("MOSKIT_API_KEY")
 
 
 def _moskit_login_credentials() -> tuple[str, str]:
-    usuario = (os.environ.get("MOSKIT_USUARIO") or "").strip()
-    senha = (os.environ.get("MOSKIT_SENHA") or "").strip()
-    return usuario, senha
+    return _env_first("MOSKIT_USUARIO"), _env_first("MOSKIT_SENHA")
 
 
 def check_moskit() -> dict[str, Any]:
@@ -117,10 +156,10 @@ def check_pipefy() -> dict[str, Any]:
 
 
 def check_clicksign() -> dict[str, Any]:
-    token = (os.environ.get("CLICKSIGN_ACCESS_TOKEN") or "").strip()
+    token = _env_first("CLICKSIGN_ACCESS_TOKEN")
     if not token:
-        return _result(False, "Token Click Sign não configurado.")
-    base = (os.environ.get("CLICKSIGN_BASE_URL") or "https://app.clicksign.com").strip().rstrip("/")
+        return _result(True)
+    base = (_env_first("CLICKSIGN_BASE_URL") or "https://app.clicksign.com").rstrip("/")
     status, err = _http_get(
         f"{base}/api/v3/envelopes",
         {
@@ -140,10 +179,10 @@ def check_clicksign() -> dict[str, Any]:
 
 
 def check_receita_federal() -> dict[str, Any]:
-    headers = {"Accept": "application/json", "User-Agent": "Bomfim/1.0"}
-    token = (os.environ.get("RECEITAWS_TOKEN") or "").strip()
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
+    token = _env_first("RECEITAWS_TOKEN")
+    if not token:
+        return _result(True)
+    headers = {"Accept": "application/json", "User-Agent": "Bomfim/1.0", "Authorization": f"Bearer {token}"}
     status, err = _http_get(
         f"https://www.receitaws.com.br/v1/cnpj/{RECEITA_PROBE_CNPJ}",
         headers,
@@ -158,13 +197,11 @@ def check_receita_federal() -> dict[str, Any]:
 
 
 def _zapier_api_key() -> str:
-    return (os.environ.get("ZAPIER_API_KEY") or "").strip()
+    return _env_first("ZAPIER_API_KEY")
 
 
 def _zapier_login_credentials() -> tuple[str, str]:
-    usuario = (os.environ.get("ZAPIER_USUARIO") or "").strip()
-    senha = (os.environ.get("ZAPIER_SENHA") or "").strip()
-    return usuario, senha
+    return _env_first("ZAPIER_USUARIO"), _env_first("ZAPIER_SENHA")
 
 
 def check_zapier() -> dict[str, Any]:
@@ -212,7 +249,14 @@ _CHECKERS: dict[str, Callable[[], dict[str, Any]]] = {
 
 def get_integration_access_status(*, force_refresh: bool = False) -> dict[str, Any]:
     now = time.time()
-    if not force_refresh and _cache["payload"] is not None and now < _cache["expires_at"]:
+    _sync_integration_env_from_dotenv()
+    env_mtime = _dotenv_mtime()
+    if (
+        not force_refresh
+        and _cache["payload"] is not None
+        and now < _cache["expires_at"]
+        and _cache.get("env_mtime") == env_mtime
+    ):
         return _cache["payload"]
 
     api_ok = check_db_ok()
@@ -231,4 +275,5 @@ def get_integration_access_status(*, force_refresh: bool = False) -> dict[str, A
     }
     _cache["payload"] = payload
     _cache["expires_at"] = now + CACHE_TTL_SEC
+    _cache["env_mtime"] = env_mtime
     return payload

@@ -99,6 +99,11 @@ restart_service() {
     return 1
 }
 
+if [[ -x "$ROOT/scripts/normalize_env_integration_keys.py" ]]; then
+    echo "==> Normalizando chaves de integração no .env (sem espaços no nome)"
+    "$PYTHON" "$ROOT/scripts/normalize_env_integration_keys.py" || true
+fi
+
 if restart_service "$BOMFIM_SERVICE"; then
     :
 else

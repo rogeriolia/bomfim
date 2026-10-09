@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "@untitledui/icons";
-import { api } from "@/api/client";
+import { ApiError, api } from "@/api/client";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Button } from "@/components/bomfim/ui";
 import { cx } from "@/utils/cx";
@@ -42,10 +42,16 @@ export function IntegrationBar() {
                 };
             }
             setStatusByName(next);
-        } catch {
+        } catch (e) {
+            let detail = "API da operação indisponível.";
+            if (e instanceof ApiError) {
+                if (e.status === 401) detail = "Sessão expirada — faça login novamente.";
+                else if (e.status === 404) detail = "API sem endpoint de integrações (atualize o deploy).";
+                else detail = e.message;
+            }
             const next: Record<string, { state: DotState; detail?: string }> = {};
             for (const { name } of integrations) {
-                next[name] = { state: "error", detail: "API da operação indisponível." };
+                next[name] = { state: "error", detail };
             }
             setStatusByName(next);
         }
