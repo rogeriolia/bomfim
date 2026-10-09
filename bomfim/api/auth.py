@@ -2,11 +2,12 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, g, jsonify, request
 
 from bomfim.extensions import db
 from bomfim.models import User
-from bomfim.security import check_password, create_access_token
+from bomfim.integration_access import get_integration_access_status
+from bomfim.security import check_password, create_access_token, login_required
 from bomfim.serializers import user_to_json
 
 auth_bp = Blueprint("auth", __name__)
@@ -32,4 +33,21 @@ def login():
     token = create_access_token(user.id)
     if isinstance(token, bytes):
         token = token.decode("utf-8")
-    return jsonify({"token": token, "user": user_to_json(user)})
+    return jsonify(
+        {
+            "token": token,
+            "user": user_to_json(user),
+            "integrations_access": get_integration_access_status(force_refresh=True),
+        }
+    )
+
+
+@auth_bp.get("/me")
+@login_required
+def session_me():
+    return jsonify(
+        {
+            "user": user_to_json(g.current_user),
+            "integrations_access": get_integration_access_status(),
+        }
+    )

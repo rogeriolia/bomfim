@@ -1,5 +1,5 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
-import { ApiError, api, clearToken, getToken, setToken } from "@/api/client";
+import { ApiError, api, clearToken, getToken, setToken, type IntegrationAccessStatus } from "@/api/client";
 import { type Registration, initialRegistrations } from "@/data/mocks/registrations";
 
 export type UserRole = "admin" | "manager" | "operator" | "promoter";
@@ -32,6 +32,23 @@ function useStore() {
     const [records, setRecords] = useState<Registration[]>(initialRegistrations);
     const [recordsLoaded, setRecordsLoaded] = useState(false);
     const [toast, setToast] = useState("");
+    const [integrationsAccess, setIntegrationsAccess] = useState<IntegrationAccessStatus | null>(null);
+
+    const refreshIntegrationsAccess = useCallback(async (refresh = false) => {
+        if (!getToken()) return;
+        try {
+            const data = refresh
+                ? await api.getIntegrationAccessStatus(true)
+                : (await api.getSessionMe()).integrations_access;
+            setIntegrationsAccess(data);
+        } catch (e) {
+            if (e instanceof ApiError && e.status === 401) {
+                clearToken();
+                setUser(null);
+                setIntegrationsAccess(null);
+            }
+        }
+    }, []);
 
     const refreshRecords = useCallback(async () => {
         if (!getToken()) return;
@@ -48,22 +65,29 @@ function useStore() {
     }, []);
 
     useEffect(() => {
-        if (user) void refreshRecords();
-    }, [user, refreshRecords]);
+        if (user) {
+            void refreshRecords();
+            void refreshIntegrationsAccess();
+        }
+    }, [user, refreshRecords, refreshIntegrationsAccess]);
 
     return {
         user,
         records,
         recordsLoaded,
         toast,
+        integrationsAccess,
         notify: setToast,
         refreshRecords,
+        refreshIntegrationsAccess,
         login: async (email: string, password: string, remember: boolean) => {
             const res = await api.login(email, password);
             setToken(res.token, remember);
             const session = { name: res.user.name, email: res.user.email, role: res.user.role };
             persistSession(session, remember);
             setUser(session);
+            if (res.integrations_access) setIntegrationsAccess(res.integrations_access);
+            else await refreshIntegrationsAccess(true);
             await refreshRecords();
         },
         logout: () => {
@@ -73,6 +97,7 @@ function useStore() {
             setUser(null);
             setRecords(initialRegistrations);
             setRecordsLoaded(false);
+            setIntegrationsAccess(null);
         },
         update: async (id: string, patch: Partial<Registration>) => {
             const updated = await api.updateRegistration(id, patch);

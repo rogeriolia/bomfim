@@ -103,11 +103,19 @@ export interface ApiUser {
 export interface LoginResponse {
     token: string;
     user: ApiUser;
+    integrations_access?: IntegrationAccessStatus;
+}
+
+export interface SessionMeResponse {
+    user: ApiUser;
+    integrations_access: IntegrationAccessStatus;
 }
 
 export const api = {
     login: (email: string, password: string) =>
         request<LoginResponse>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }),
+
+    getSessionMe: () => request<SessionMeResponse>("/api/auth/me"),
 
     listUsers: () => request<ApiUser[]>("/api/users"),
 

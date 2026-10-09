@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ChevronDown } from "@untitledui/icons";
-import { ApiError, api } from "@/api/client";
+import { useApp } from "@/app/store";
 import { Dropdown } from "@/components/base/dropdown/dropdown";
 import { Button } from "@/components/bomfim/ui";
 import { cx } from "@/utils/cx";
@@ -22,40 +22,14 @@ function dotClass(state: DotState): string {
 }
 
 function dotTitle(state: DotState, detail?: string): string | undefined {
-    if (state === "ok") return "Conexão verificada";
-    if (state === "error") return detail || "Integração indisponível";
-    return "Verificando conexão…";
+    if (state === "ok") return "Conectado";
+    if (state === "error") return detail || "Indisponível";
+    return "Verificando…";
 }
 
 export function IntegrationBar() {
+    const { user, integrationsAccess, refreshIntegrationsAccess } = useApp();
     const [compact, setCompact] = useState(false);
-    const [statusByName, setStatusByName] = useState<Record<string, { state: DotState; detail?: string }>>({});
-
-    const loadStatus = useCallback(async () => {
-        try {
-            const data = await api.getIntegrationAccessStatus();
-            const next: Record<string, { state: DotState; detail?: string }> = {};
-            for (const row of data.integrations) {
-                next[row.name] = {
-                    state: row.ok ? "ok" : "error",
-                    detail: row.detail,
-                };
-            }
-            setStatusByName(next);
-        } catch (e) {
-            let detail = "API da operação indisponível.";
-            if (e instanceof ApiError) {
-                if (e.status === 401) detail = "Sessão expirada — faça login novamente.";
-                else if (e.status === 404) detail = "API sem endpoint de integrações (atualize o deploy).";
-                else detail = e.message;
-            }
-            const next: Record<string, { state: DotState; detail?: string }> = {};
-            for (const { name } of integrations) {
-                next[name] = { state: "error", detail };
-            }
-            setStatusByName(next);
-        }
-    }, []);
 
     useEffect(() => {
         const media = window.matchMedia("(max-width: 1200px)");
@@ -66,17 +40,33 @@ export function IntegrationBar() {
     }, []);
 
     useEffect(() => {
-        void loadStatus();
-        const id = window.setInterval(() => void loadStatus(), POLL_MS);
-        return () => window.clearInterval(id);
-    }, [loadStatus]);
+        if (!user) return;
+        const tick = () => void refreshIntegrationsAccess(true);
+        tick();
+        const id = window.setInterval(tick, POLL_MS);
+        const onFocus = () => void refreshIntegrationsAccess(true);
+        window.addEventListener("focus", onFocus);
+        return () => {
+            window.clearInterval(id);
+            window.removeEventListener("focus", onFocus);
+        };
+    }, [user, refreshIntegrationsAccess]);
 
-    const resolveState = useMemo(
-        () =>
-            (name: string): { state: DotState; detail?: string } =>
-                statusByName[name] ?? { state: "unknown" },
-        [statusByName],
-    );
+    const statusByName = useMemo(() => {
+        const next: Record<string, { state: DotState; detail?: string }> = {};
+        if (integrationsAccess?.integrations) {
+            for (const row of integrationsAccess.integrations) {
+                next[row.name] = {
+                    state: row.ok ? "ok" : "error",
+                    detail: row.detail,
+                };
+            }
+        }
+        return next;
+    }, [integrationsAccess]);
+
+    const resolveState = (name: string): { state: DotState; detail?: string } =>
+        statusByName[name] ?? { state: "unknown" };
 
     return (
         <div className="integration-bar">

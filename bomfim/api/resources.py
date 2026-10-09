@@ -41,17 +41,17 @@ def list_units():
     return jsonify([unit_to_json(u) for u in Unit.query.order_by(Unit.name).all()])
 
 
-@resources_bp.get("/integrations")
-@login_required
-def list_integrations():
-    return jsonify([integration_to_json(i) for i in Integration.query.order_by(Integration.name).all()])
-
-
 @resources_bp.get("/integrations/access-status")
 @login_required
 def integrations_access_status():
     force = request.args.get("refresh") in ("1", "true", "yes")
     return jsonify(get_integration_access_status(force_refresh=force))
+
+
+@resources_bp.get("/integrations")
+@login_required
+def list_integrations():
+    return jsonify([integration_to_json(i) for i in Integration.query.order_by(Integration.name).all()])
 
 
 @resources_bp.get("/audit-logs")
