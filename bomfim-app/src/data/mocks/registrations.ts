@@ -1,7 +1,50 @@
 import { demoCnpjs } from "@/utils/demo-cnpj";
 
 export const stages=['Caixa de entrada','Cadastro em andamento','Aguardando assinatura','Cadastro finalizado','Cadastros declinados'];
-export interface Registration {id:string;name:string;cnpj:string;promoter:string;owner:string;table:string;tipo_cobranca?:string;usuario_ssw?:string;contact_email?:string;postal_code?:string;contact_name?:string;stage:number;city:string;unit:string;updated:string;documents:number;comments:number;}
+
+export function stageLabel(stage: number | null | undefined): string {
+    if (stage == null || stage < 0 || stage >= stages.length) return "—";
+    return stages[stage] ?? "—";
+}
+
+export interface RegistrationAnexo {
+    id: number;
+    filename: string;
+    download_status: string;
+    has_local_file: boolean;
+    file_url?: string | null;
+}
+
+export interface RegistrationContato {
+    tipo: string;
+    nome: string;
+    email: string;
+    telefone1: string;
+    telefone2: string;
+    email_ocorrencias: string;
+}
+
+export interface Registration {
+    id: string;
+    name: string;
+    cnpj: string;
+    promoter: string;
+    owner: string;
+    table: string;
+    tipo_cobranca?: string;
+    usuario_ssw?: string;
+    contact_email?: string;
+    postal_code?: string;
+    contact_name?: string;
+    stage: number | null;
+    city: string;
+    unit: string;
+    updated: string;
+    documents: number;
+    comments: number;
+    anexos?: RegistrationAnexo[];
+    contatos?: RegistrationContato[];
+}
 const names=['Flatter Cosméticos','Avyquímica do Brasil Ltda','Tropical Bebidas','Nevvia Motos','Casali Empreendimentos','GNC Comércio de Veículos','Adiltex Indústria e Comércio','Serra Verde Alimentos','Nordeste Distribuidora','Lumiê Cosméticos','Alvorada Embalagens','Via Norte Autopeças','Solare Equipamentos','Vitta Produtos Naturais','Costa Sul Têxtil','Pontal Comércio de Materiais','Brisa Farma','Araponga Indústria'];
 
 export const initialRegistrations: Registration[] = names.map((name, i) => ({

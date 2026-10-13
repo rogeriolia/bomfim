@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from bomfim.default_owner import DEFAULT_OWNER_NAME
 from bomfim.models import (
+    DOWNLOAD_STATUS_OK,
     AuditLog,
     Document,
     EmailTemplate,
@@ -13,6 +14,24 @@ from bomfim.models import (
     Unit,
     User,
 )
+from bomfim.storage_paths import anexo_absolute_path
+
+
+def _anexo_to_json(registration_id: int, anexo) -> dict:
+    has_file = bool(
+        anexo.download_status == DOWNLOAD_STATUS_OK
+        and anexo.local_path
+        and anexo_absolute_path(anexo.local_path).is_file()
+    )
+    return {
+        "id": anexo.id,
+        "filename": anexo.filename or "",
+        "download_status": anexo.download_status,
+        "has_local_file": has_file,
+        "file_url": (
+            f"/api/registrations/{registration_id}/anexos/{anexo.id}/file" if has_file else None
+        ),
+    }
 
 
 def user_to_json(user: User) -> dict:
@@ -41,12 +60,36 @@ def registration_to_json(reg: Registration) -> dict:
         "contact_email": reg.contact_email or "",
         "postal_code": reg.postal_code or "",
         "contact_name": reg.contact_name or "",
-        "stage": reg.stage.sort_order if reg.stage else 0,
+        "stage": reg.stage.sort_order if reg.stage else None,
         "city": reg.city,
         "unit": reg.unit.name if reg.unit else "",
         "updated": reg.updated_at.isoformat(),
         "documents": reg.documents_count,
         "comments": reg.comments_count,
+        "razao_social": reg.razao_social or "",
+        "nome_fantasia": reg.nome_fantasia or "",
+        "endereco": reg.endereco or "",
+        "numero": reg.numero or "",
+        "bairro": reg.bairro or "",
+        "estado": reg.estado or "",
+        "moskit_id": reg.moskit_id or "",
+        "pipefy_codigo": reg.pipefy_codigo or "",
+        "tipo_oportunidade": reg.tipo_oportunidade.descricao if reg.tipo_oportunidade else "",
+        "tipo_cliente": reg.tipo_cliente.descricao if reg.tipo_cliente else "",
+        "tipo_embalagem": reg.tipo_embalagem.descricao if reg.tipo_embalagem else "",
+        "potencial_faturamento": reg.potencial_faturamento_mes.descricao if reg.potencial_faturamento_mes else "",
+        "anexos": [_anexo_to_json(reg.id, a) for a in sorted(reg.anexos, key=lambda x: x.ordem)],
+        "contatos": [
+            {
+                "tipo": c.tipo_contato,
+                "nome": c.nome,
+                "email": c.email or "",
+                "telefone1": c.telefone1 or "",
+                "telefone2": c.telefone2 or "",
+                "email_ocorrencias": c.email_ocorrencias or "",
+            }
+            for c in reg.contatos
+        ],
     }
 
 

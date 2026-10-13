@@ -2,14 +2,15 @@ from __future__ import annotations
 
 from datetime import date
 
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, send_file
 
 from sqlalchemy.exc import IntegrityError
 
 from bomfim.cnpj import parse_cnpj
 from bomfim.default_owner import ensure_default_owner_user
 from bomfim.extensions import db
-from bomfim.models import Registration, RegistrationStage, Unit, User
+from bomfim.models import DOWNLOAD_STATUS_OK, Registration, RegistrationAnexo, RegistrationStage, Unit, User
+from bomfim.storage_paths import anexo_absolute_path
 from bomfim.security import login_required
 from bomfim.serializers import registration_to_json
 
@@ -18,6 +19,19 @@ registrations_bp = Blueprint("registrations", __name__)
 
 def _resolve_stage(stage_index: int) -> RegistrationStage | None:
     return RegistrationStage.query.filter_by(sort_order=stage_index).first()
+
+
+def _stage_id_from_payload(data: dict, *, for_create: bool) -> int | None:
+    if "stage" in data:
+        raw = data["stage"]
+        if raw is None:
+            return None
+        stage = _resolve_stage(int(raw))
+        return stage.id if stage else None
+    if for_create:
+        stage = _resolve_stage(0) or RegistrationStage.query.order_by(RegistrationStage.sort_order).first()
+        return stage.id if stage else None
+    return None
 
 
 def _resolve_user_by_name(name: str) -> User | None:
@@ -69,7 +83,7 @@ def create_registration():
     if _cnpj_conflict(cnpj):
         return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
 
-    stage = _resolve_stage(int(data.get("stage", 0))) or RegistrationStage.query.order_by(RegistrationStage.sort_order).first()
+    stage_id = _stage_id_from_payload(data, for_create=True)
     unit = Unit.query.filter_by(name=data.get("unit") or "Salvador").first()
     if unit is None:
         return jsonify({"error": "Unidade inválida."}), 400
@@ -83,7 +97,7 @@ def create_registration():
         cnpj=cnpj,
         usuario_ssw=_optional_text(data.get("usuario_ssw")),
         price_table=data.get("table") or "Capital Express",
-        stage_id=stage.id if stage else 1,
+        stage_id=stage_id,
         city=data.get("city") or unit.locality,
         unit_id=unit.id,
         promoter_id=promoter.id if promoter else None,
@@ -133,9 +147,9 @@ def patch_registration(reg_id: int):
         if unit:
             reg.unit_id = unit.id
     if "stage" in data:
-        stage = _resolve_stage(int(data["stage"]))
-        if stage:
-            reg.stage_id = stage.id
+        stage_id = _stage_id_from_payload(data, for_create=False)
+        if stage_id is not None or data["stage"] is None:
+            reg.stage_id = stage_id
     if "promoter" in data:
         pu = _resolve_user_by_name(str(data["promoter"]))
         if pu:
@@ -154,3 +168,25 @@ def patch_registration(reg_id: int):
         db.session.rollback()
         return jsonify({"error": "Este CNPJ já está cadastrado."}), 409
     return jsonify(registration_to_json(reg))
+
+
+@registrations_bp.get("/<int:reg_id>/anexos/<int:anexo_id>/file")
+@login_required
+def get_registration_anexo_file(reg_id: int, anexo_id: int):
+    anexo = db.session.get(RegistrationAnexo, anexo_id)
+    if anexo is None or anexo.registration_id != reg_id:
+        return jsonify({"error": "Anexo não encontrado."}), 404
+    if anexo.download_status != DOWNLOAD_STATUS_OK or not anexo.local_path:
+        return (
+            jsonify(
+                {
+                    "error": "Arquivo local indisponível.",
+                    "download_status": anexo.download_status,
+                }
+            ),
+            404,
+        )
+    absolute = anexo_absolute_path(anexo.local_path)
+    if not absolute.is_file():
+        return jsonify({"error": "Arquivo não encontrado no storage.", "download_status": anexo.download_status}), 404
+    return send_file(absolute, as_attachment=False, download_name=anexo.filename or absolute.name)

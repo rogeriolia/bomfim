@@ -23,7 +23,7 @@ export default function PaineisPage() {
                     p,
                     records.filter((r) => r.promoter === p).length,
                     records.filter((r) => r.promoter === p && r.stage === 3).length,
-                    records.filter((r) => r.promoter === p && r.stage < 3).length,
+                    records.filter((r) => r.promoter === p && r.stage != null && r.stage < 3).length,
                 ])}
             />
         </PageState>

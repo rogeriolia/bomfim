@@ -26,7 +26,7 @@ export default function CadastroLayout() {
                             exportCsv(
                                 "cadastros",
                                 ["Empresa", "CNPJ", "Etapa"],
-                                records.map((r) => [r.name, r.cnpj, r.stage]),
+                                records.map((r) => [r.name, r.cnpj, r.stage ?? "—"]),
                             )
                         }
                     >

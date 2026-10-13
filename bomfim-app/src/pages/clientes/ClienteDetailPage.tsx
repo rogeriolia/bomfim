@@ -6,7 +6,8 @@ import { useApp } from "@/app/store";
 import { CnpjField } from "@/components/bomfim/cnpj-field";
 import { Button, Choice, ContextNavigation, DataTable, Input, PageHeading, PageState, Status } from "@/components/bomfim/ui";
 import { cnpjForSubmit, validateCnpj } from "@/utils/cnpj";
-import { integrations, stages } from "@/data/mocks/registrations";
+import { RegistrationAnexosList } from "@/components/business/registration-anexos-list";
+import { integrations, stageLabel } from "@/data/mocks/registrations";
 
 const PRICE_TABLES = ["Capital Express", "Interior Premium", "Regional Standard"];
 
@@ -104,7 +105,7 @@ export default function ClienteDetailPage() {
                 ← Clientes
             </Link>
             <PageHeading title={r.name} description={`${r.cnpj} · ${r.city}`}>
-                <Status>{stages[r.stage]}</Status>
+                <Status>{stageLabel(r.stage)}</Status>
                 {canEdit && (
                     <Button
                         color="secondary"
@@ -178,13 +179,10 @@ export default function ClienteDetailPage() {
                         <Button type="submit">Salvar alterações</Button>
                     </form>
                 ) : section === "documentos" ? (
-                    <DataTable
-                        title="Documentos do cliente"
-                        columns={["Documento", "Tipo", "Status"]}
-                        rows={[
-                            [`Contrato social — ${r.name}`, "PDF", <Status>Aprovado</Status>],
-                            ["Comprovante de endereço", "PDF", <Status>Aguardando</Status>],
-                        ]}
+                    <RegistrationAnexosList
+                        registrationId={r.id}
+                        anexos={r.anexos ?? []}
+                        title="Anexos do cadastro"
                     />
                 ) : section === "assinaturas" ? (
                     <DataTable
@@ -250,7 +248,7 @@ export default function ClienteDetailPage() {
                             <div className="timeline-item">
                                 <span>↻</span>
                                 <div>
-                                    <strong>{stages[r.stage]}</strong>
+                                    <strong>{stageLabel(r.stage)}</strong>
                                     <p>Responsável: {r.owner}</p>
                                 </div>
                             </div>

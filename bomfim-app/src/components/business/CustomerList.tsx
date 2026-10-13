@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
-import { stages } from "@/data/mocks/registrations";
+import { stageLabel, stages } from "@/data/mocks/registrations";
 import { CompanyIdentity } from "./RegistrationCard";
 
 export function CustomerList() {
@@ -68,7 +68,7 @@ export function CustomerList() {
                     r.promoter || "Usuário Bomfim",
                     r.usuario_ssw || "—",
                     <span className="tipo-cobranca">{r.tipo_cobranca || r.table || "—"}</span>,
-                    <Status>{stages[r.stage]}</Status>,
+                    <Status>{stageLabel(r.stage)}</Status>,
                     r.updated.split("-").reverse().join("/"),
                 ])}
             />

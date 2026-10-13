@@ -1,6 +1,6 @@
 import { useApp } from "@/app/store";
 import { Button, DataTable, Metric, PageHeading, PageState, exportCsv } from "@/components/bomfim/ui";
-import { stages } from "@/data/mocks/registrations";
+import { stageLabel } from "@/data/mocks/registrations";
 
 export default function RelatoriosPage() {
     const { records } = useApp();
@@ -27,7 +27,7 @@ export default function RelatoriosPage() {
                                 exportCsv(
                                     s,
                                     ["Empresa", "CNPJ", "Etapa", "Unidade", "Promotor"],
-                                    records.map((r) => [r.name, r.cnpj, stages[r.stage], r.unit, r.promoter]),
+                                    records.map((r) => [r.name, r.cnpj, stageLabel(r.stage), r.unit, r.promoter]),
                                 )
                             }
                         >

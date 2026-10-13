@@ -14,7 +14,8 @@ import {
     receitaSituation,
     type FieldRow,
 } from "@/components/business/drawer-field-format";
-import { type Registration, integrations, stages } from "@/data/mocks/registrations";
+import { RegistrationAnexosList } from "@/components/business/registration-anexos-list";
+import { type Registration, integrations, stageLabel, stages } from "@/data/mocks/registrations";
 
 const CLICK_SIGN = "Click Sign";
 
@@ -91,7 +92,23 @@ export function CustomerDrawer({ record, onClose }: { record: Registration | nul
                         {receitaLoading && <p className="subtle drawer-receita-hint">Consultando Receita Federal…</p>}
                         {receitaError && !receitaLoading && <p className="subtle drawer-receita-hint">{receitaError}</p>}
                         <div className="drawer-wide-grid">
-                            <DrawerSection title="Cadastro Bomfim" rows={bomfimSection(record, stages[record.stage] ?? "—")} />
+                            <DrawerSection
+                                title="Cadastro Bomfim"
+                                rows={bomfimSection(record, stageLabel(record.stage))}
+                            />
+                            {(record.anexos?.length ?? 0) > 0 && (
+                                <section className="drawer-section drawer-section-full">
+                                    <RegistrationAnexosList
+                                        registrationId={record.id}
+                                        anexos={record.anexos ?? []}
+                                        title="Anexos"
+                                        compact
+                                    />
+                                    <Link to={`/clientes/${record.id}/documentos`} onClick={onClose} className="text-link">
+                                        Ver todos os documentos →
+                                    </Link>
+                                </section>
+                            )}
                             {!receitaLoading && (
                                 <>
                                     <DrawerSection
@@ -115,7 +132,7 @@ export function CustomerDrawer({ record, onClose }: { record: Registration | nul
                             <section className="drawer-section drawer-section-full">
                                 <Choice
                                     label="Etapa do cadastro"
-                                    value={String(record.stage)}
+                                    value={String(record.stage ?? 0)}
                                     onChange={(v) => {
                                         update(record.id, { stage: Number(v) });
                                         notify("Etapa atualizada nesta demonstração.");
@@ -128,7 +145,7 @@ export function CustomerDrawer({ record, onClose }: { record: Registration | nul
                                 {integrations.map((i) => (
                                     <div className="integration-row" key={i}>
                                         <span>{i}</span>
-                                        <Status>{i === CLICK_SIGN && record.stage < 3 ? "Aguardando" : "OK"}</Status>
+                                        <Status>{i === CLICK_SIGN && (record.stage ?? 0) < 3 ? "Aguardando" : "OK"}</Status>
                                     </div>
                                 ))}
                             </section>

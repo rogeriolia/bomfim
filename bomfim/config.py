@@ -54,8 +54,17 @@ def _engine_options() -> dict:
     return {"connect_args": connect_args}
 
 
+def _storage_root() -> Path:
+    raw = os.environ.get("STORAGE_ROOT", "storage").strip()
+    root = Path(raw)
+    if not root.is_absolute():
+        root = Path(__file__).resolve().parent.parent / root
+    return root
+
+
 class Config:
     SECRET_KEY = os.environ.get("SECRET_KEY", "bomfim-dev-secret-change-in-production")
+    STORAGE_ROOT = _storage_root()
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_ENGINE_OPTIONS = _engine_options()
     SQLALCHEMY_TRACK_MODIFICATIONS = False

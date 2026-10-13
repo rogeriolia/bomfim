@@ -115,7 +115,7 @@ NAMES = [
     "Araponga Indústria",
 ]
 
-STAGE_INDICES = [0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4]
+STAGE_INDICES: list[int | None] = [0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, None]
 PROMOTERS = ["Ana Ferreira", "Rafael Martins", "Camila Santos"]
 OWNERS = ["Mariana Costa", "Lucas Almeida", "Renata Melo"]
 TABLES = ["Capital Express", "Interior Premium", "Regional Standard"]
@@ -211,7 +211,8 @@ def run_seed() -> None:
         promoter = user_by_name.get(promoter_name) or user_by_name.get("Ana Ferreira")
         owner = user_by_name.get(owner_name) or user_by_name.get("Mariana Costa")
         unit = unit_by_name[UNIT_NAMES[i % 3]]
-        stage = stage_by_order[STAGE_INDICES[i]]
+        stage_idx = STAGE_INDICES[i]
+        stage_id = stage_by_order[stage_idx].id if stage_idx is not None else None
         updated = date(2026, 9, 30 - (i % 8))
         if reg is None:
             reg = Registration(
@@ -219,7 +220,7 @@ def run_seed() -> None:
                 name=company,
                 cnpj=cnpj,
                 price_table=TABLES[i % 3],
-                stage_id=stage.id,
+                stage_id=stage_id,
                 city=CITIES[i % 3],
                 unit_id=unit.id,
                 promoter_id=promoter.id if promoter else None,
@@ -233,7 +234,7 @@ def run_seed() -> None:
             reg.name = company
             reg.cnpj = cnpj
             reg.price_table = TABLES[i % 3]
-            reg.stage_id = stage.id
+            reg.stage_id = stage_id
             reg.city = CITIES[i % 3]
             reg.unit_id = unit.id
             reg.promoter_id = promoter.id if promoter else None
@@ -323,7 +324,7 @@ def run_seed() -> None:
                     doc_type="PDF",
                     uploaded_by_name=reg.owner.name if reg.owner else "Renata Melo",
                     uploaded_at=reg.updated_at,
-                    status="Aprovado" if reg.stage.sort_order == 3 else "Em análise",
+                    status="Aprovado" if reg.stage and reg.stage.sort_order == 3 else "Em análise",
                 )
             )
         db.session.add_all(docs)

@@ -5,7 +5,7 @@ import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, ExportButton, Metric, PageHeading, PageState, Status, exportCsv } from "@/components/bomfim/ui";
 import { FunnelStagePie } from "@/components/business/funnel-stage-pie";
 import { CompanyIdentity } from "@/components/business/RegistrationCard";
-import { integrations, stages } from "@/data/mocks/registrations";
+import { integrations, stageLabel, stages } from "@/data/mocks/registrations";
 
 export default function OverviewPage() {
     const { records } = useApp();
@@ -27,7 +27,7 @@ export default function OverviewPage() {
                         exportCsv(
                             "visao-geral",
                             ["Empresa", "Etapa"],
-                            shown.map((r) => [r.name, stages[r.stage]]),
+                            shown.map((r) => [r.name, stageLabel(r.stage)]),
                         )
                     }
                 />
@@ -105,7 +105,7 @@ export default function OverviewPage() {
                             <Link to={"/clientes/" + r.id}>
                                 <CompanyIdentity name={r.name} />
                             </Link>,
-                            stages[r.stage],
+                            stageLabel(r.stage),
                             r.owner,
                             r.updated.split("-").reverse().join("/"),
                             <Status>{r.stage === 3 ? "Concluído" : "Em andamento"}</Status>,

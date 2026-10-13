@@ -35,7 +35,7 @@ export type FieldRow = [label: string, value: string];
 export function bomfimSection(record: {
     id: string;
     name: string;
-    stage: number;
+    stage: number | null;
     unit: string;
     promoter: string;
     owner: string;

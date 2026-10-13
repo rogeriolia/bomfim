@@ -147,6 +147,9 @@ DB_PASSWORD=...
 SECRET_KEY=...
 API_PORT=5001
 
+# Anexos baixados do Pipefy (não vão no Git — criar pasta no servidor)
+STORAGE_ROOT=storage
+
 # Integrações (barra CONECTADO À OPERAÇÃO) — credenciais só no servidor, nunca no Git
 PYPEFY_USUARIO=...
 PYPEFY_SENHA=...
@@ -156,6 +159,38 @@ ZAPIER_USUARIO=...
 ZAPIER_SENHA=...
 # Opcional: CLICKSIGN_ACCESS_TOKEN, MOSKIT_API_KEY, RECEITAWS_TOKEN
 ```
+
+---
+
+## Storage de anexos (produção)
+
+A pasta `storage/` **não** é versionada (só `storage/.gitkeep` no Git). Após o deploy, crie o diretório e garanta permissão de escrita para o usuário da API (`www-data` no systemd de exemplo):
+
+```bash
+cd /opt/bomfim   # ou /var/www/bomfim
+mkdir -p storage/registration_anexos
+sudo chown -R www-data:www-data storage
+chmod 750 storage
+```
+
+No `.env`: `STORAGE_ROOT=storage` (ou caminho absoluto, ex. `/opt/bomfim/storage`).
+
+Se o banco já tem URLs de anexos (import Pipefy) mas o disco do servidor está vazio — ou veio de outro ambiente com `download_status=ok` — **rebaixe tudo**:
+
+```bash
+cd /opt/bomfim
+export FLASK_APP=manage.py
+export FLASK_CONFIG=production
+.venv/bin/python -m flask download-anexos --force
+# Falhas pontuais:
+.venv/bin/python -m flask download-anexos --failed-only
+# Conferência:
+.venv/bin/python -m flask verify-anexos-import
+```
+
+~1300 arquivos: rode em `screen`/`tmux`; URLs Pipefy podem expirar — trate falhas com `--failed-only`.
+
+Reinicie a API após downloads longos se quiser limpar cache de workers: `sudo systemctl restart bomfim-api`.
 
 ---
 

@@ -13,7 +13,7 @@ export function FunnelStagePie({
     stageIndices,
     compact,
 }: {
-    records: { stage: number }[];
+    records: { stage: number | null }[];
     stageIndices?: number[];
     compact?: boolean;
 }) {

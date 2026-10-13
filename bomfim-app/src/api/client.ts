@@ -1,4 +1,6 @@
-import type { Registration } from "@/data/mocks/registrations";
+import type { Registration, RegistrationAnexo } from "@/data/mocks/registrations";
+
+export type { RegistrationAnexo };
 import type { UserRole } from "@/app/store";
 
 const TOKEN_KEY = "bomfim-token";
@@ -171,6 +173,28 @@ export const api = {
     getSettings: () =>
         request<{ organization_name: string; timezone: string; show_operational_warnings: boolean; show_activity_summary: boolean }>("/api/settings"),
 };
+
+export async function openRegistrationAnexoFile(registrationId: string, anexoId: number): Promise<void> {
+    const token = getToken();
+    const headers = new Headers();
+    if (token) headers.set("Authorization", `Bearer ${token}`);
+
+    const res = await fetch(`/api/registrations/${registrationId}/anexos/${anexoId}/file`, { headers });
+    if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const message = (data as { error?: string }).error || "Não foi possível abrir o arquivo.";
+        throw new ApiError(message, res.status);
+    }
+
+    const blob = await res.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const opened = window.open(objectUrl, "_blank", "noopener,noreferrer");
+    if (!opened) {
+        URL.revokeObjectURL(objectUrl);
+        throw new ApiError("Permita pop-ups para visualizar o documento.", 0);
+    }
+    window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+}
 
 export function formatDateTime(iso: string | null): string {
     if (!iso) return "—";
