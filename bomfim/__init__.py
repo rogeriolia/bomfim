@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import subprocess
+from pathlib import Path
 
 from flask import Flask
 from flask_cors import CORS
@@ -27,6 +29,22 @@ def create_app(config_name: str | None = None) -> Flask:
 
     register_blueprints(app)
 
+    def _git_rev_short() -> str | None:
+        root = Path.cwd()
+        try:
+            return (
+                subprocess.check_output(
+                    ["git", "-C", str(root), "rev-parse", "--short", "HEAD"],
+                    text=True,
+                    timeout=3,
+                    stderr=subprocess.DEVNULL,
+                )
+                .strip()
+                or None
+            )
+        except (OSError, subprocess.CalledProcessError):
+            return None
+
     @app.get("/api/health")
     def health():
         db_status = "ok"
@@ -45,6 +63,14 @@ def create_app(config_name: str | None = None) -> Flask:
             payload["registration_anexos"] = RegistrationAnexo.query.count()
         except Exception:
             pass
+
+        rev = _git_rev_short()
+        if rev:
+            payload["git_rev"] = rev
+        payload["cwd"] = str(Path.cwd())
+        payload["has_anexo_counts_route"] = any(
+            rule.rule.endswith("/anexo-counts") for rule in app.url_map.iter_rules()
+        )
         return payload
 
     return app
