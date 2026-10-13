@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-import os
 import time
-from pathlib import Path
 import urllib.error
 import urllib.request
 from datetime import datetime, timezone
@@ -10,12 +8,8 @@ from typing import Any, Callable
 
 from sqlalchemy import text
 
-from dotenv import load_dotenv
-
+from bomfim.config import ENV_FILE, _env_get
 from bomfim.extensions import db
-
-_ENV_ROOT = Path(__file__).resolve().parent.parent
-_ENV_FILE = _ENV_ROOT / ".env"
 
 CHECK_TIMEOUT_SEC = 5
 CACHE_TTL_SEC = 60
@@ -23,45 +17,18 @@ CACHE_TTL_SEC = 60
 INTEGRATION_NAMES = ["Moskit", "Pipefy", "Click Sign", "Receita Federal", "Zapier"]
 
 
-def _parse_dotenv_file() -> dict[str, str]:
-    """Lê .env ignorando espaços antes do nome da variável (comum em edições manuais)."""
-    parsed: dict[str, str] = {}
-    if not _ENV_FILE.is_file():
-        return parsed
-    for line in _ENV_FILE.read_text(encoding="utf-8").splitlines():
-        raw = line.strip()
-        if not raw or raw.startswith("#") or "=" not in raw:
-            continue
-        key, _, value = raw.partition("=")
-        key = key.strip()
-        if key:
-            parsed[key] = value.strip().strip('"').strip("'")
-    return parsed
-
-
 def _env_first(*keys: str) -> str:
+    """Mesma prioridade do app: `.env` do projeto prevalece sobre o ambiente do SO."""
     for key in keys:
-        value = (os.environ.get(key) or "").strip()
-        if value:
-            return value
-    for key in keys:
-        value = _parse_dotenv_file().get(key, "").strip()
+        value = _env_get(key)
         if value:
             return value
     return ""
 
 
-def _sync_integration_env_from_dotenv() -> None:
-    """Sincroniza .env → os.environ (gunicorn só lê .env no start)."""
-    load_dotenv(_ENV_FILE, override=False)
-    for key, value in _parse_dotenv_file().items():
-        if value and not (os.environ.get(key) or "").strip():
-            os.environ[key] = value
-
-
 def _dotenv_mtime() -> float:
     try:
-        return _ENV_FILE.stat().st_mtime
+        return ENV_FILE.stat().st_mtime
     except OSError:
         return 0.0
 
@@ -249,7 +216,6 @@ _CHECKERS: dict[str, Callable[[], dict[str, Any]]] = {
 
 def get_integration_access_status(*, force_refresh: bool = False) -> dict[str, Any]:
     now = time.time()
-    _sync_integration_env_from_dotenv()
     env_mtime = _dotenv_mtime()
     if (
         not force_refresh

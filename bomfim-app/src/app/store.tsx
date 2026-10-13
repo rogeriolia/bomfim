@@ -46,6 +46,10 @@ function useStore() {
                 clearToken();
                 setUser(null);
                 setIntegrationsAccess(null);
+            } else {
+                setToast(
+                    e instanceof ApiError ? e.message : "Não foi possível verificar integrações.",
+                );
             }
         }
     }, []);

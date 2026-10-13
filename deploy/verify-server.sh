@@ -4,6 +4,18 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+if [[ -f "$ROOT/deploy/deploy.env" ]]; then
+    # shellcheck disable=SC1091
+    source "$ROOT/deploy/deploy.env"
+fi
+if [[ -z "${VENV_DIR:-}" ]]; then
+    if [[ -x "$ROOT/venv/bin/python" ]]; then
+        VENV_DIR=venv
+    else
+        VENV_DIR=.venv
+    fi
+fi
+PYTHON="${PYTHON:-$ROOT/$VENV_DIR/bin/python}"
 API_PORT="${API_PORT:-5001}"
 BASE="http://127.0.0.1:${API_PORT}"
 
@@ -53,6 +65,24 @@ if systemctl is-active bomfim-api &>/dev/null; then
 else
     echo "Aviso: serviço bomfim-api não está active"
 fi
+
+echo ""
+echo "==> Credenciais de integração (.env, só presença):"
+"$PYTHON" - <<'PY'
+from bomfim.config import _env_get
+
+keys = [
+    "PYPEFY_USUARIO",
+    "PYPEFY_SENHA",
+    "PIPEFY_USUARIO",
+    "MOSKIT_USUARIO",
+    "MOSKIT_SENHA",
+    "ZAPIER_USUARIO",
+    "ZAPIER_SENHA",
+]
+for k in keys:
+    print(f"  {k}: {'ok' if _env_get(k) else 'MISSING'}")
+PY
 
 echo ""
 echo "OK — compare git_rev no health com 'git rev-parse --short HEAD' nesta pasta."
