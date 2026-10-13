@@ -151,9 +151,65 @@ def _free_port(api_port: int) -> bool:
     return not _port_in_use("127.0.0.1", api_port)
 
 
+def _api_health_db_ok(api_port: int) -> bool:
+    import json
+    import urllib.error
+    import urllib.request
+
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{api_port}/api/health", timeout=3) as res:
+            data = json.loads(res.read().decode())
+            return data.get("db") == "ok"
+    except (urllib.error.URLError, OSError, json.JSONDecodeError, ValueError):
+        return False
+
+
+def _preflight_database() -> bool:
+    """Garante Postgres acessível (.env); tenta túnel SSH automático para VPS."""
+    from bomfim.config import _env_get, load_project_dotenv
+    from bomfim.db_tunnel import ensure_db_tunnel_from_env
+
+    load_project_dotenv()
+    host = _env_get("DB_HOST", "127.0.0.1")
+    port = int(_env_get("DB_PORT", "5432") or "5432")
+    try:
+        with socket.create_connection((host, port), timeout=3):
+            return True
+    except OSError:
+        pass
+
+    if ensure_db_tunnel_from_env():
+        host = _env_get("DB_HOST", host)
+        port = int(_env_get("DB_PORT", str(port)) or str(port))
+        try:
+            with socket.create_connection((host, port), timeout=3):
+                return True
+        except OSError:
+            pass
+
+    print(
+        f"\nErro: PostgreSQL inacessível em {host}:{port}. Login local não funciona.",
+        file=sys.stderr,
+    )
+    print(
+        "Confirme SSH ao VPS (BOMFIM_SSH_TUNNEL=root@host no .env) ou túnel manual.\n",
+        file=sys.stderr,
+    )
+    return False
+
+
 def _run_flask_api(api_port: int) -> None:
     os.environ["API_PORT"] = str(api_port)
-    from manage import app
+    from bomfim.config import load_project_dotenv
+    from bomfim.db_tunnel import ensure_db_tunnel_from_env
+
+    ensure_db_tunnel_from_env()
+    import importlib
+
+    import manage
+
+    importlib.reload(manage)
+    app = manage.app
 
     app.run(host="127.0.0.1", port=api_port, debug=False, use_reloader=False, threaded=True)
 
@@ -181,13 +237,15 @@ def _api_patch_users_available(api_port: int) -> bool:
 def _ensure_api(api_port: int = DEFAULT_API_PORT) -> bool:
     """Sobe a API no mesmo processo (thread) se a porta estiver livre."""
     if _port_in_use("127.0.0.1", api_port):
-        if _api_patch_users_available(api_port):
+        if _api_patch_users_available(api_port) and _api_health_db_ok(api_port):
             print(f"API Flask já ativa em http://127.0.0.1:{api_port}")
             return True
-        print(f"API desatualizada em http://127.0.0.1:{api_port}; reiniciando…", file=sys.stderr)
+        print(f"Reiniciando API em http://127.0.0.1:{api_port} (banco ou versão desatualizada)…", file=sys.stderr)
         if not _free_port(api_port):
             print(f"Erro: não foi possível liberar a porta {api_port}.", file=sys.stderr)
             return False
+    if not _preflight_database():
+        sys.exit(1)
     print(f"Iniciando API Flask em http://127.0.0.1:{api_port} …")
     thread = threading.Thread(target=_run_flask_api, args=(api_port,), name="bomfim-api", daemon=True)
     thread.start()

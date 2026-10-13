@@ -3,10 +3,11 @@ import { Link, useSearchParams } from "react-router";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
 import { stageLabel, stages } from "@/data/mocks/registrations";
+import { RegistrationAnexoCount } from "@/components/business/registration-anexos-list";
 import { CompanyIdentity } from "./RegistrationCard";
 
 export function CustomerList() {
-    const { records } = useApp();
+    const { records, recordsLoaded } = useApp();
     const [searchParams] = useSearchParams();
     const stageFromUrl = searchParams.get("stage");
     const [search, setSearch] = useState("");
@@ -31,9 +32,15 @@ export function CustomerList() {
     );
     const pages = Math.max(1, Math.ceil(rows.length / 8));
     const current = Math.min(page, pages - 1);
+    const anexoTotal = (r: (typeof rows)[0]) => r.anexos?.length ?? r.anexos_count ?? 0;
+    const anexoAvail = (r: (typeof rows)[0]) =>
+        r.anexos?.length ? r.anexos.filter((a) => a.has_local_file).length : (r.anexos_available_count ?? 0);
+    const withAnexos = rows.filter((r) => anexoTotal(r) > 0).length;
+    const anexoFilesTotal = rows.reduce((n, r) => n + anexoAvail(r), 0);
     const options = (v: string[]) => [{ id: "all", label: "Todos" }, ...Array.from(new Set(v)).map((s) => ({ id: s, label: s }))];
     return (
         <PageState>
+            {!recordsLoaded && <p className="subtle">Carregando cadastros da base…</p>}
             <SearchFilter
                 search={search}
                 setSearch={(v) => {
@@ -58,7 +65,7 @@ export function CustomerList() {
             </SearchFilter>
             <DataTable
                 title="Clientes"
-                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Usuário SSW", "Tipo cobrança", "Status", "Atualização"]}
+                columns={["Empresa", "CNPJ", "Responsável", "Promotor", "Usuário SSW", "Tipo cobrança", "Anexos", "Status", "Atualização"]}
                 rows={rows.slice(current * 8, current * 8 + 8).map((r) => [
                     <Link to={"/clientes/" + r.id}>
                         <CompanyIdentity name={r.name} />
@@ -68,13 +75,20 @@ export function CustomerList() {
                     r.promoter || "Usuário Bomfim",
                     r.usuario_ssw || "—",
                     <span className="tipo-cobranca">{r.tipo_cobranca || r.table || "—"}</span>,
+                    <RegistrationAnexoCount
+                        registrationId={r.id}
+                        anexos={r.anexos}
+                        anexosCount={r.anexos_count}
+                        anexosAvailableCount={r.anexos_available_count}
+                    />,
                     <Status>{stageLabel(r.stage)}</Status>,
                     r.updated.split("-").reverse().join("/"),
                 ])}
             />
             <div className="pagination">
                 <span>
-                    {rows.length} registros · Página {current + 1} de {pages}
+                    {rows.length} registros · {withAnexos} com anexos ({anexoFilesTotal} arquivos no servidor) · Página {current + 1} de{" "}
+                    {pages}
                 </span>
                 <div className="actions">
                     <Button color="secondary" size="sm" isDisabled={current === 0} onClick={() => setPage(current - 1)}>

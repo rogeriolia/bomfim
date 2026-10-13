@@ -43,6 +43,8 @@ export interface Registration {
     documents: number;
     comments: number;
     anexos?: RegistrationAnexo[];
+    anexos_count?: number;
+    anexos_available_count?: number;
     contatos?: RegistrationContato[];
 }
 const names=['Flatter Cosméticos','Avyquímica do Brasil Ltda','Tropical Bebidas','Nevvia Motos','Casali Empreendimentos','GNC Comércio de Veículos','Adiltex Indústria e Comércio','Serra Verde Alimentos','Nordeste Distribuidora','Lumiê Cosméticos','Alvorada Embalagens','Via Norte Autopeças','Solare Equipamentos','Vitta Produtos Naturais','Costa Sul Têxtil','Pontal Comércio de Materiais','Brisa Farma','Araponga Indústria'];

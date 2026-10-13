@@ -5,6 +5,7 @@ from datetime import date
 from flask import Blueprint, jsonify, request, send_file
 
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import selectinload
 
 from bomfim.cnpj import parse_cnpj
 from bomfim.default_owner import ensure_default_owner_user
@@ -55,14 +56,25 @@ def _cnpj_conflict(cnpj: str, exclude_id: int | None = None) -> bool:
 @registrations_bp.get("")
 @login_required
 def list_registrations():
-    rows = Registration.query.order_by(Registration.id).all()
-    return jsonify([registration_to_json(r) for r in rows])
+    rows = (
+        Registration.query.options(selectinload(Registration.anexos))
+        .order_by(Registration.id)
+        .all()
+    )
+    return jsonify([registration_to_json(r, for_list=True) for r in rows])
 
 
 @registrations_bp.get("/<int:reg_id>")
 @login_required
 def get_registration(reg_id: int):
-    reg = db.session.get(Registration, reg_id)
+    reg = (
+        Registration.query.options(
+            selectinload(Registration.anexos),
+            selectinload(Registration.contatos),
+        )
+        .filter_by(id=reg_id)
+        .first()
+    )
     if reg is None:
         return jsonify({"error": "Cadastro não encontrado."}), 404
     return jsonify(registration_to_json(reg))

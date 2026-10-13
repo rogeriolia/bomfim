@@ -1,6 +1,6 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ApiError, api, clearToken, getToken, setToken, type IntegrationAccessStatus } from "@/api/client";
-import { type Registration, initialRegistrations } from "@/data/mocks/registrations";
+import { type Registration } from "@/data/mocks/registrations";
 
 export type UserRole = "admin" | "manager" | "operator" | "promoter";
 export const roles: Record<UserRole, string> = { admin: "Administrador", manager: "Gestor", operator: "Operador", promoter: "Promotor" };
@@ -29,7 +29,7 @@ function persistSession(session: Session, remember: boolean) {
 
 function useStore() {
     const [user, setUser] = useState<Session | null>(readSession);
-    const [records, setRecords] = useState<Registration[]>(initialRegistrations);
+    const [records, setRecords] = useState<Registration[]>([]);
     const [recordsLoaded, setRecordsLoaded] = useState(false);
     const [toast, setToast] = useState("");
     const [integrationsAccess, setIntegrationsAccess] = useState<IntegrationAccessStatus | null>(null);
@@ -60,6 +60,10 @@ function useStore() {
             if (e instanceof ApiError && e.status === 401) {
                 clearToken();
                 setUser(null);
+            } else {
+                setToast(
+                    e instanceof ApiError ? e.message : "Não foi possível carregar os cadastros da API.",
+                );
             }
         }
     }, []);
@@ -95,7 +99,7 @@ function useStore() {
             localStorage.removeItem("bomfim-session");
             sessionStorage.removeItem("bomfim-session");
             setUser(null);
-            setRecords(initialRegistrations);
+            setRecords([]);
             setRecordsLoaded(false);
             setIntegrationsAccess(null);
         },

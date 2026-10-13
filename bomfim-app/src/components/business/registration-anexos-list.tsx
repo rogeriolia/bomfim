@@ -1,7 +1,40 @@
 import { useState, type ReactNode } from "react";
+import { Link } from "react-router";
 import { ApiError, openRegistrationAnexoFile } from "@/api/client";
 import { Button, DataTable, Status } from "@/components/bomfim/ui";
 import type { RegistrationAnexo } from "@/data/mocks/registrations";
+
+/** Contagem para listagens: total e quantos estão no servidor (Abrir). */
+export function RegistrationAnexoCount({
+    registrationId,
+    anexos,
+    anexosCount,
+    anexosAvailableCount,
+}: {
+    registrationId: string;
+    anexos?: RegistrationAnexo[];
+    anexosCount?: number;
+    anexosAvailableCount?: number;
+}) {
+    const total = anexos?.length ? anexos.length : (anexosCount ?? 0);
+    if (!total) {
+        return <span className="subtle">0</span>;
+    }
+    const available = anexos?.length
+        ? anexos.filter((a) => a.has_local_file).length
+        : (anexosAvailableCount ?? 0);
+    const label = available === total ? String(total) : `${available}/${total}`;
+    const title =
+        available === total
+            ? `${total} anexo(s) no servidor`
+            : `${available} de ${total} anexo(s) disponível(is) no servidor`;
+
+    return (
+        <Link to={`/clientes/${registrationId}/documentos`} className="text-link" title={title}>
+            {label}
+        </Link>
+    );
+}
 
 function statusLabel(anexo: RegistrationAnexo): ReactNode {
     if (anexo.download_status === "ok" && anexo.has_local_file) {

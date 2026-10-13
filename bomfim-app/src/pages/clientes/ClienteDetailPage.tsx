@@ -7,7 +7,7 @@ import { CnpjField } from "@/components/bomfim/cnpj-field";
 import { Button, Choice, ContextNavigation, DataTable, Input, PageHeading, PageState, Status } from "@/components/bomfim/ui";
 import { cnpjForSubmit, validateCnpj } from "@/utils/cnpj";
 import { RegistrationAnexosList } from "@/components/business/registration-anexos-list";
-import { integrations, stageLabel } from "@/data/mocks/registrations";
+import { type Registration, integrations, stageLabel } from "@/data/mocks/registrations";
 
 const PRICE_TABLES = ["Capital Express", "Interior Premium", "Regional Standard"];
 
@@ -32,7 +32,26 @@ export default function ClienteDetailPage() {
     const { id, section = "visao-geral" } = useParams();
     const { user, records, update, notify } = useApp();
     const canEdit = user ? canEditOperationalData(user.role) : false;
-    const r = records.find((x) => x.id === id);
+    const [detail, setDetail] = useState<Registration | null>(null);
+    const r = detail ?? records.find((x) => x.id === id);
+
+    useEffect(() => {
+        if (!id) return;
+        let cancelled = false;
+        void api.getRegistration(id).then(
+            (row) => {
+                if (!cancelled) setDetail(row);
+            },
+            (e) => {
+                if (!cancelled) {
+                    notify(e instanceof ApiError ? e.message : "Erro ao carregar cadastro.");
+                }
+            },
+        );
+        return () => {
+            cancelled = true;
+        };
+    }, [id, notify]);
     const [editing, setEditing] = useState(false);
     const [name, setName] = useState(r?.name || "");
     const [cnpj, setCnpj] = useState(r?.cnpj || "");

@@ -131,6 +131,8 @@ export const api = {
 
     listRegistrations: () => request<Registration[]>("/api/registrations"),
 
+    getRegistration: (id: string) => request<Registration>(`/api/registrations/${id}`),
+
     updateRegistration: (id: string, patch: Partial<Registration>) =>
         request<Registration>(`/api/registrations/${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
 

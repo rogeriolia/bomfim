@@ -47,8 +47,18 @@ def user_to_json(user: User) -> dict:
     }
 
 
-def registration_to_json(reg: Registration) -> dict:
-    return {
+def _anexo_counts(reg: Registration) -> tuple[int, int]:
+    total = len(reg.anexos)
+    available = sum(
+        1
+        for a in reg.anexos
+        if a.download_status == DOWNLOAD_STATUS_OK and a.local_path
+    )
+    return total, available
+
+
+def registration_to_json(reg: Registration, *, for_list: bool = False) -> dict:
+    data: dict = {
         "id": str(reg.id),
         "name": reg.name,
         "cnpj": reg.cnpj,
@@ -78,19 +88,27 @@ def registration_to_json(reg: Registration) -> dict:
         "tipo_cliente": reg.tipo_cliente.descricao if reg.tipo_cliente else "",
         "tipo_embalagem": reg.tipo_embalagem.descricao if reg.tipo_embalagem else "",
         "potencial_faturamento": reg.potencial_faturamento_mes.descricao if reg.potencial_faturamento_mes else "",
-        "anexos": [_anexo_to_json(reg.id, a) for a in sorted(reg.anexos, key=lambda x: x.ordem)],
-        "contatos": [
-            {
-                "tipo": c.tipo_contato,
-                "nome": c.nome,
-                "email": c.email or "",
-                "telefone1": c.telefone1 or "",
-                "telefone2": c.telefone2 or "",
-                "email_ocorrencias": c.email_ocorrencias or "",
-            }
-            for c in reg.contatos
-        ],
     }
+    if for_list:
+        total, available = _anexo_counts(reg)
+        data["anexos"] = []
+        data["anexos_count"] = total
+        data["anexos_available_count"] = available
+        data["contatos"] = []
+        return data
+    data["anexos"] = [_anexo_to_json(reg.id, a) for a in sorted(reg.anexos, key=lambda x: x.ordem)]
+    data["contatos"] = [
+        {
+            "tipo": c.tipo_contato,
+            "nome": c.nome,
+            "email": c.email or "",
+            "telefone1": c.telefone1 or "",
+            "telefone2": c.telefone2 or "",
+            "email_ocorrencias": c.email_ocorrencias or "",
+        }
+        for c in reg.contatos
+    ]
+    return data
 
 
 def unit_to_json(unit: Unit) -> dict:

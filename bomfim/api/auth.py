@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 
 from flask import Blueprint, g, jsonify, request
 
+from sqlalchemy.exc import OperationalError
+
 from bomfim.extensions import db
 from bomfim.models import User
 from bomfim.integration_access import get_integration_access_status
@@ -21,7 +23,10 @@ def login():
     if not email or not password:
         return jsonify({"error": "E-mail e senha são obrigatórios."}), 400
 
-    user = User.query.filter_by(email=email).first()
+    try:
+        user = User.query.filter_by(email=email).first()
+    except OperationalError:
+        return jsonify({"error": "Banco de dados indisponível. Verifique Postgres ou túnel SSH."}), 503
     if user is None or not check_password(password, user.password_hash):
         return jsonify({"error": "E-mail ou senha inválidos."}), 401
     if user.status != "active":
