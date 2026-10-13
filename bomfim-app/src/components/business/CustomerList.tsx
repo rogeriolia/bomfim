@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useApp } from "@/app/store";
 import { Button, Choice, DataTable, PageState, SearchFilter, Status } from "@/components/bomfim/ui";
-import { stageLabel, stages } from "@/data/mocks/registrations";
+import { registrationAnexoAvailable, registrationAnexoTotal, stageLabel, stages } from "@/data/mocks/registrations";
 import { RegistrationAnexoCount } from "@/components/business/registration-anexos-list";
 import { CompanyIdentity } from "./RegistrationCard";
 
@@ -32,9 +32,8 @@ export function CustomerList() {
     );
     const pages = Math.max(1, Math.ceil(rows.length / 8));
     const current = Math.min(page, pages - 1);
-    const anexoTotal = (r: (typeof rows)[0]) => r.anexos?.length ?? r.anexos_count ?? 0;
-    const anexoAvail = (r: (typeof rows)[0]) =>
-        r.anexos?.length ? r.anexos.filter((a) => a.has_local_file).length : (r.anexos_available_count ?? 0);
+    const anexoTotal = (r: (typeof rows)[0]) => registrationAnexoTotal(r);
+    const anexoAvail = (r: (typeof rows)[0]) => registrationAnexoAvailable(r);
     const withAnexos = rows.filter((r) => anexoTotal(r) > 0).length;
     const anexoFilesTotal = rows.reduce((n, r) => n + anexoAvail(r), 0);
     const options = (v: string[]) => [{ id: "all", label: "Todos" }, ...Array.from(new Set(v)).map((s) => ({ id: s, label: s }))];

@@ -9,6 +9,7 @@ from bomfim.models import (
     Integration,
     Organization,
     Registration,
+    RegistrationAnexo,
     SignatureEnvelope,
     SyncEvent,
     Unit,
@@ -17,12 +18,21 @@ from bomfim.models import (
 from bomfim.storage_paths import anexo_absolute_path
 
 
-def _anexo_to_json(registration_id: int, anexo) -> dict:
-    has_file = bool(
+def _anexo_has_local_file(anexo) -> bool:
+    """UI e contadores: ok + local_path (rota /file confirma arquivo no disco)."""
+    return bool(anexo.download_status == DOWNLOAD_STATUS_OK and anexo.local_path)
+
+
+def _anexo_file_on_disk(anexo) -> bool:
+    return bool(
         anexo.download_status == DOWNLOAD_STATUS_OK
         and anexo.local_path
         and anexo_absolute_path(anexo.local_path).is_file()
     )
+
+
+def _anexo_to_json(registration_id: int, anexo) -> dict:
+    has_file = _anexo_has_local_file(anexo)
     return {
         "id": anexo.id,
         "filename": anexo.filename or "",
@@ -48,16 +58,32 @@ def user_to_json(user: User) -> dict:
 
 
 def _anexo_counts(reg: Registration) -> tuple[int, int]:
-    total = len(reg.anexos)
-    available = sum(
-        1
-        for a in reg.anexos
-        if a.download_status == DOWNLOAD_STATUS_OK and a.local_path
-    )
+    """Contagem por cadastro; anexos é lazy='dynamic' (AppenderQuery — sem len())."""
+    coll = reg.anexos
+    if hasattr(coll, "count"):
+        total = coll.count()
+        available = coll.filter(
+            RegistrationAnexo.download_status == DOWNLOAD_STATUS_OK,
+            RegistrationAnexo.local_path.isnot(None),
+            RegistrationAnexo.local_path != "",
+        ).count()
+        return total, available
+    total = len(coll)
+    available = sum(1 for a in coll if _anexo_has_local_file(a))
     return total, available
 
 
-def registration_to_json(reg: Registration, *, for_list: bool = False) -> dict:
+def _anexo_list(reg: Registration) -> list[RegistrationAnexo]:
+    coll = reg.anexos
+    return list(coll.all() if hasattr(coll, "all") else coll)
+
+
+def registration_to_json(
+    reg: Registration,
+    *,
+    for_list: bool = False,
+    anexo_counts: tuple[int, int] | None = None,
+) -> dict:
     data: dict = {
         "id": str(reg.id),
         "name": reg.name,
@@ -90,13 +116,13 @@ def registration_to_json(reg: Registration, *, for_list: bool = False) -> dict:
         "potencial_faturamento": reg.potencial_faturamento_mes.descricao if reg.potencial_faturamento_mes else "",
     }
     if for_list:
-        total, available = _anexo_counts(reg)
+        total, available = anexo_counts if anexo_counts is not None else _anexo_counts(reg)
         data["anexos"] = []
         data["anexos_count"] = total
         data["anexos_available_count"] = available
         data["contatos"] = []
         return data
-    data["anexos"] = [_anexo_to_json(reg.id, a) for a in sorted(reg.anexos, key=lambda x: x.ordem)]
+    data["anexos"] = [_anexo_to_json(reg.id, a) for a in sorted(_anexo_list(reg), key=lambda x: x.ordem)]
     data["contatos"] = [
         {
             "tipo": c.tipo_contato,

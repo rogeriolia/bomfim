@@ -4,6 +4,7 @@ from datetime import date
 
 from flask import Blueprint, jsonify, request, send_file
 
+from sqlalchemy import case, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import selectinload
 
@@ -53,15 +54,39 @@ def _cnpj_conflict(cnpj: str, exclude_id: int | None = None) -> bool:
     return q.first() is not None
 
 
+def _anexo_counts_by_registration() -> dict[int, tuple[int, int]]:
+    """Total e disponíveis (ok + local_path) por cadastro — uma query agregada."""
+    ok_flag = case(
+        (
+            (RegistrationAnexo.download_status == DOWNLOAD_STATUS_OK)
+            & (RegistrationAnexo.local_path.isnot(None))
+            & (RegistrationAnexo.local_path != ""),
+            1,
+        ),
+        else_=0,
+    )
+    rows = (
+        db.session.query(
+            RegistrationAnexo.registration_id,
+            func.count(RegistrationAnexo.id),
+            func.sum(ok_flag),
+        )
+        .group_by(RegistrationAnexo.registration_id)
+        .all()
+    )
+    return {int(reg_id): (int(total), int(available or 0)) for reg_id, total, available in rows}
+
+
 @registrations_bp.get("")
 @login_required
 def list_registrations():
-    rows = (
-        Registration.query.options(selectinload(Registration.anexos))
-        .order_by(Registration.id)
-        .all()
-    )
-    return jsonify([registration_to_json(r, for_list=True) for r in rows])
+    count_map = _anexo_counts_by_registration()
+    rows = Registration.query.order_by(Registration.id).all()
+    payload = []
+    for reg in rows:
+        counts = count_map.get(reg.id, (0, 0))
+        payload.append(registration_to_json(reg, for_list=True, anexo_counts=counts))
+    return jsonify(payload)
 
 
 @registrations_bp.get("/<int:reg_id>")

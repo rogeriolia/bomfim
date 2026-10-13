@@ -16,13 +16,15 @@ export function RegistrationAnexoCount({
     anexosCount?: number;
     anexosAvailableCount?: number;
 }) {
-    const total = anexos?.length ? anexos.length : (anexosCount ?? 0);
+    const total =
+        typeof anexosCount === "number" ? anexosCount : (anexos?.length ?? 0);
     if (!total) {
         return <span className="subtle">0</span>;
     }
-    const available = anexos?.length
-        ? anexos.filter((a) => a.has_local_file).length
-        : (anexosAvailableCount ?? 0);
+    const available =
+        typeof anexosAvailableCount === "number"
+            ? anexosAvailableCount
+            : (anexos?.filter((a) => a.has_local_file).length ?? 0);
     const label = available === total ? String(total) : `${available}/${total}`;
     const title =
         available === total

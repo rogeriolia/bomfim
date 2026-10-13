@@ -7,6 +7,17 @@ export function stageLabel(stage: number | null | undefined): string {
     return stages[stage] ?? "—";
 }
 
+/** Listagem API envia anexos: [] + anexos_count (priorizar contador explícito). */
+export function registrationAnexoTotal(r: Registration): number {
+    if (typeof r.anexos_count === "number") return r.anexos_count;
+    return r.anexos?.length ?? 0;
+}
+
+export function registrationAnexoAvailable(r: Registration): number {
+    if (typeof r.anexos_available_count === "number") return r.anexos_available_count;
+    return r.anexos?.filter((a) => a.has_local_file).length ?? 0;
+}
+
 export interface RegistrationAnexo {
     id: number;
     filename: string;
