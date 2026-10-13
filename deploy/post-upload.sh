@@ -138,6 +138,20 @@ PY
     fi
 fi
 
+if [[ "$health_ok" == "1" ]] && command -v curl >/dev/null 2>&1; then
+    detail_v2=$(curl -sf "http://127.0.0.1:${API_PORT}/api/health" | "$PYTHON" -c "import sys,json; print(json.load(sys.stdin).get('registration_detail_v2'))" 2>/dev/null || echo "false")
+    if [[ "$detail_v2" != "True" && "$detail_v2" != "true" ]]; then
+        echo "ERRO: API rodando código antigo (registration_detail_v2=false). Reinicie bomfim-api." >&2
+        sudo systemctl restart "$BOMFIM_SERVICE" 2>/dev/null || true
+        sleep 2
+        detail_v2=$(curl -sf "http://127.0.0.1:${API_PORT}/api/health" | "$PYTHON" -c "import sys,json; print(json.load(sys.stdin).get('registration_detail_v2'))" 2>/dev/null || echo "false")
+        if [[ "$detail_v2" != "True" && "$detail_v2" != "true" ]]; then
+            echo "ERRO: após restart, registration_detail_v2 ainda false — confira WorkingDirectory do systemd." >&2
+            exit 1
+        fi
+    fi
+fi
+
 if [[ "$health_ok" != "1" ]]; then
     echo "" >&2
     echo "ERRO: nada escutando em 127.0.0.1:${API_PORT} (Connection refused)." >&2

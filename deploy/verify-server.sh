@@ -40,6 +40,13 @@ if [[ "$code" == "404" ]]; then
     exit 1
 fi
 
+detail_v2=$(curl -sf "${BASE}/api/health" | python3 -c "import sys,json; print(json.load(sys.stdin).get('registration_detail_v2'))" 2>/dev/null || echo "false")
+echo "registration_detail_v2 (Documentos): ${detail_v2}"
+if [[ "$detail_v2" != "True" && "$detail_v2" != "true" ]]; then
+    echo "ERRO: API ainda com get_registration antigo (selectinload) — git pull && sudo systemctl restart bomfim-api" >&2
+    exit 1
+fi
+
 echo ""
 echo "==> Frontend (dist):"
 DIST="$ROOT/bomfim-app/dist/index.html"

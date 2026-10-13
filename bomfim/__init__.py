@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import os
 import subprocess
 from pathlib import Path
@@ -70,6 +71,11 @@ def create_app(config_name: str | None = None) -> Flask:
         payload["cwd"] = str(Path.cwd())
         payload["has_anexo_counts_route"] = any(
             rule.rule.endswith("/anexo-counts") for rule in app.url_map.iter_rules()
+        )
+        from bomfim.api import registrations as registrations_api
+
+        payload["registration_detail_v2"] = "selectinload(" not in inspect.getsource(
+            registrations_api.get_registration
         )
         return payload
 

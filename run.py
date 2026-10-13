@@ -151,17 +151,50 @@ def _free_port(api_port: int) -> bool:
     return not _port_in_use("127.0.0.1", api_port)
 
 
-def _api_health_db_ok(api_port: int) -> bool:
+def _local_git_short() -> str | None:
+    try:
+        return (
+            subprocess.check_output(
+                ["git", "rev-parse", "--short", "HEAD"],
+                cwd=str(ROOT),
+                text=True,
+                stderr=subprocess.DEVNULL,
+                timeout=5,
+            )
+            .strip()
+            or None
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return None
+
+
+def _api_health(api_port: int) -> dict | None:
     import json
     import urllib.error
     import urllib.request
 
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{api_port}/api/health", timeout=3) as res:
+        with urllib.request.urlopen(f"http://127.0.0.1:{api_port}/api/health", timeout=5) as res:
             data = json.loads(res.read().decode())
-            return data.get("db") == "ok"
+            return data if isinstance(data, dict) else None
     except (urllib.error.URLError, OSError, json.JSONDecodeError, ValueError):
+        return None
+
+
+def _api_is_current(api_port: int) -> bool:
+    """API na porta já reflete o código deste checkout (evita Flask antigo com selectinload)."""
+    health = _api_health(api_port)
+    if not health or health.get("db") != "ok":
         return False
+    if not health.get("has_anexo_counts_route"):
+        return False
+    if not health.get("registration_detail_v2"):
+        return False
+    local_rev = _local_git_short()
+    api_rev = health.get("git_rev")
+    if local_rev and api_rev and local_rev != api_rev:
+        return False
+    return True
 
 
 def _preflight_database() -> bool:
@@ -255,14 +288,19 @@ def _api_patch_users_available(api_port: int) -> bool:
 def _ensure_api(api_port: int = DEFAULT_API_PORT) -> bool:
     """Sobe a API no mesmo processo (thread) se a porta estiver livre."""
     if _port_in_use("127.0.0.1", api_port):
-        if (
-            _api_patch_users_available(api_port)
-            and _api_registration_anexo_counts_available(api_port)
-            and _api_health_db_ok(api_port)
-        ):
+        if _api_is_current(api_port):
             print(f"API Flask já ativa em http://127.0.0.1:{api_port}")
             return True
-        print(f"Reiniciando API em http://127.0.0.1:{api_port} (banco ou versão desatualizada)…", file=sys.stderr)
+        health = _api_health(api_port)
+        if health:
+            print(
+                f"Reiniciando API em http://127.0.0.1:{api_port} "
+                f"(health: db={health.get('db')}, anexo_counts={health.get('has_anexo_counts_route')}, "
+                f"detail_v2={health.get('registration_detail_v2')}, git_rev={health.get('git_rev')})…",
+                file=sys.stderr,
+            )
+        else:
+            print(f"Reiniciando API em http://127.0.0.1:{api_port} (sem resposta /api/health)…", file=sys.stderr)
         if not _free_port(api_port):
             print(f"Erro: não foi possível liberar a porta {api_port}.", file=sys.stderr)
             return False
