@@ -7,15 +7,47 @@ export function stageLabel(stage: number | null | undefined): string {
     return stages[stage] ?? "—";
 }
 
+function readAnexoCount(value: unknown): number | undefined {
+    if (typeof value === "number" && Number.isFinite(value)) return value;
+    if (typeof value === "string" && value.trim() !== "") {
+        const n = Number(value);
+        if (Number.isFinite(n)) return n;
+    }
+    return undefined;
+}
+
+type AnexoCountFields = Pick<Registration, "anexos" | "anexos_count" | "anexos_available_count">;
+
 /** Listagem API envia anexos: [] + anexos_count (priorizar contador explícito). */
-export function registrationAnexoTotal(r: Registration): number {
-    if (typeof r.anexos_count === "number") return r.anexos_count;
+export function registrationAnexoTotal(r: AnexoCountFields): number {
+    const explicit = readAnexoCount(r.anexos_count);
+    if (explicit !== undefined) return explicit;
     return r.anexos?.length ?? 0;
 }
 
-export function registrationAnexoAvailable(r: Registration): number {
-    if (typeof r.anexos_available_count === "number") return r.anexos_available_count;
+export function registrationAnexoAvailable(r: AnexoCountFields): number {
+    const explicit = readAnexoCount(r.anexos_available_count);
+    if (explicit !== undefined) return explicit;
     return r.anexos?.filter((a) => a.has_local_file).length ?? 0;
+}
+
+export type RegistrationAnexoCountsMap = Record<string, { total: number; available: number }>;
+
+/** Mescla contadores do endpoint /anexo-counts na listagem. */
+export function mergeRegistrationAnexoCounts(
+    rows: Registration[],
+    map: RegistrationAnexoCountsMap,
+): Registration[] {
+    if (!Object.keys(map).length) return rows;
+    return rows.map((r) => {
+        const c = map[r.id];
+        if (!c) return r;
+        return {
+            ...r,
+            anexos_count: c.total,
+            anexos_available_count: c.available,
+        };
+    });
 }
 
 export interface RegistrationAnexo {

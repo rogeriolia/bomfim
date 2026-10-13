@@ -1,4 +1,4 @@
-import type { Registration, RegistrationAnexo } from "@/data/mocks/registrations";
+import type { Registration, RegistrationAnexo, RegistrationAnexoCountsMap } from "@/data/mocks/registrations";
 
 export type { RegistrationAnexo };
 import type { UserRole } from "@/app/store";
@@ -130,6 +130,8 @@ export const api = {
     ) => request<ApiUser>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
 
     listRegistrations: () => request<Registration[]>("/api/registrations"),
+
+    getRegistrationAnexoCounts: () => request<RegistrationAnexoCountsMap>("/api/registrations/anexo-counts"),
 
     getRegistration: (id: string) => request<Registration>(`/api/registrations/${id}`),
 

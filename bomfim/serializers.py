@@ -4,6 +4,7 @@ from bomfim.default_owner import DEFAULT_OWNER_NAME
 from bomfim.models import (
     DOWNLOAD_STATUS_OK,
     AuditLog,
+    Contato,
     Document,
     EmailTemplate,
     Integration,
@@ -78,6 +79,11 @@ def _anexo_list(reg: Registration) -> list[RegistrationAnexo]:
     return list(coll.all() if hasattr(coll, "all") else coll)
 
 
+def _contato_list(reg: Registration) -> list[Contato]:
+    coll = reg.contatos
+    return list(coll.all() if hasattr(coll, "all") else coll)
+
+
 def registration_to_json(
     reg: Registration,
     *,
@@ -132,7 +138,7 @@ def registration_to_json(
             "telefone2": c.telefone2 or "",
             "email_ocorrencias": c.email_ocorrencias or "",
         }
-        for c in reg.contatos
+        for c in _contato_list(reg)
     ]
     return data
 

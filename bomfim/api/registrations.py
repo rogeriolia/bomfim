@@ -6,8 +6,6 @@ from flask import Blueprint, jsonify, request, send_file
 
 from sqlalchemy import case, func
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import selectinload
-
 from bomfim.cnpj import parse_cnpj
 from bomfim.default_owner import ensure_default_owner_user
 from bomfim.extensions import db
@@ -89,17 +87,24 @@ def list_registrations():
     return jsonify(payload)
 
 
+@registrations_bp.get("/anexo-counts")
+@login_required
+def registration_anexo_counts():
+    """Mapa leve id → total/disponível (mesma agregação da listagem)."""
+    count_map = _anexo_counts_by_registration()
+    return jsonify(
+        {
+            str(reg_id): {"total": total, "available": available}
+            for reg_id, (total, available) in count_map.items()
+        }
+    )
+
+
 @registrations_bp.get("/<int:reg_id>")
 @login_required
 def get_registration(reg_id: int):
-    reg = (
-        Registration.query.options(
-            selectinload(Registration.anexos),
-            selectinload(Registration.contatos),
-        )
-        .filter_by(id=reg_id)
-        .first()
-    )
+    # anexos/contatos são lazy="dynamic" — selectinload não é suportado
+    reg = Registration.query.filter_by(id=reg_id).first()
     if reg is None:
         return jsonify({"error": "Cadastro não encontrado."}), 404
     return jsonify(registration_to_json(reg))

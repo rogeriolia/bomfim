@@ -214,6 +214,24 @@ def _run_flask_api(api_port: int) -> None:
     app.run(host="127.0.0.1", port=api_port, debug=False, use_reloader=False, threaded=True)
 
 
+def _api_registration_anexo_counts_available(api_port: int) -> bool:
+    """True se GET /api/registrations/anexo-counts existe (401 ok; 404 = API antiga)."""
+    import urllib.error
+    import urllib.request
+
+    req = urllib.request.Request(
+        f"http://127.0.0.1:{api_port}/api/registrations/anexo-counts",
+        method="GET",
+    )
+    try:
+        urllib.request.urlopen(req)
+        return True
+    except urllib.error.HTTPError as e:
+        return e.code != 404
+    except OSError:
+        return False
+
+
 def _api_patch_users_available(api_port: int) -> bool:
     """True se PATCH /api/users existe (401/405/400 ok; 404 = API antiga)."""
     import urllib.error
@@ -237,7 +255,11 @@ def _api_patch_users_available(api_port: int) -> bool:
 def _ensure_api(api_port: int = DEFAULT_API_PORT) -> bool:
     """Sobe a API no mesmo processo (thread) se a porta estiver livre."""
     if _port_in_use("127.0.0.1", api_port):
-        if _api_patch_users_available(api_port) and _api_health_db_ok(api_port):
+        if (
+            _api_patch_users_available(api_port)
+            and _api_registration_anexo_counts_available(api_port)
+            and _api_health_db_ok(api_port)
+        ):
             print(f"API Flask já ativa em http://127.0.0.1:{api_port}")
             return True
         print(f"Reiniciando API em http://127.0.0.1:{api_port} (banco ou versão desatualizada)…", file=sys.stderr)

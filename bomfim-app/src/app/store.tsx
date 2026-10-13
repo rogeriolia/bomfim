@@ -1,6 +1,6 @@
 import { type ReactNode, createContext, useCallback, useContext, useEffect, useState } from "react";
 import { ApiError, api, clearToken, getToken, setToken, type IntegrationAccessStatus } from "@/api/client";
-import { type Registration } from "@/data/mocks/registrations";
+import { mergeRegistrationAnexoCounts, type Registration } from "@/data/mocks/registrations";
 
 export type UserRole = "admin" | "manager" | "operator" | "promoter";
 export const roles: Record<UserRole, string> = { admin: "Administrador", manager: "Gestor", operator: "Operador", promoter: "Promotor" };
@@ -53,8 +53,11 @@ function useStore() {
     const refreshRecords = useCallback(async () => {
         if (!getToken()) return;
         try {
-            const rows = await api.listRegistrations();
-            setRecords(rows);
+            const [rows, anexoCounts] = await Promise.all([
+                api.listRegistrations(),
+                api.getRegistrationAnexoCounts().catch(() => ({})),
+            ]);
+            setRecords(mergeRegistrationAnexoCounts(rows, anexoCounts));
             setRecordsLoaded(true);
         } catch (e) {
             if (e instanceof ApiError && e.status === 401) {

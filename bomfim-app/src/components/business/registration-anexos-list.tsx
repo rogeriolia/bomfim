@@ -2,7 +2,11 @@ import { useState, type ReactNode } from "react";
 import { Link } from "react-router";
 import { ApiError, openRegistrationAnexoFile } from "@/api/client";
 import { Button, DataTable, Status } from "@/components/bomfim/ui";
-import type { RegistrationAnexo } from "@/data/mocks/registrations";
+import {
+    registrationAnexoAvailable,
+    registrationAnexoTotal,
+    type RegistrationAnexo,
+} from "@/data/mocks/registrations";
 
 /** Contagem para listagens: total e quantos estão no servidor (Abrir). */
 export function RegistrationAnexoCount({
@@ -16,15 +20,12 @@ export function RegistrationAnexoCount({
     anexosCount?: number;
     anexosAvailableCount?: number;
 }) {
-    const total =
-        typeof anexosCount === "number" ? anexosCount : (anexos?.length ?? 0);
+    const fields = { anexos, anexos_count: anexosCount, anexos_available_count: anexosAvailableCount };
+    const total = registrationAnexoTotal(fields);
     if (!total) {
         return <span className="subtle">0</span>;
     }
-    const available =
-        typeof anexosAvailableCount === "number"
-            ? anexosAvailableCount
-            : (anexos?.filter((a) => a.has_local_file).length ?? 0);
+    const available = registrationAnexoAvailable(fields);
     const label = available === total ? String(total) : `${available}/${total}`;
     const title =
         available === total

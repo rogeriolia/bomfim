@@ -30,10 +30,21 @@ def create_app(config_name: str | None = None) -> Flask:
     @app.get("/api/health")
     def health():
         db_status = "ok"
+        payload: dict = {"status": "ok", "db": db_status}
         try:
             db.session.execute(text("SELECT 1"))
         except Exception:
             db_status = "error"
-        return {"status": "ok", "db": db_status}
+            payload["db"] = db_status
+            return payload
+
+        try:
+            from bomfim.models import Registration, RegistrationAnexo
+
+            payload["registrations"] = Registration.query.count()
+            payload["registration_anexos"] = RegistrationAnexo.query.count()
+        except Exception:
+            pass
+        return payload
 
     return app
