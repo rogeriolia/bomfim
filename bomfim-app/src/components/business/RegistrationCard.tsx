@@ -1,5 +1,9 @@
 import { MessageSquare01, Paperclip, RefreshCw01 } from "@untitledui/icons";
+import { useRef, type DragEvent, type KeyboardEvent } from "react";
 import type { Registration } from "@/data/mocks/registrations";
+import { cx } from "@/utils/cx";
+
+export const REGISTRATION_DRAG_MIME = "application/x-bomfim-registration-id";
 
 export function CompanyIdentity({ name }: { name: string }) {
     return (
@@ -26,9 +30,57 @@ export function ActivityCounter({ documents, comments }: { documents: number; co
         </div>
     );
 }
-export function RegistrationCard({ record, onSelect }: { record: Registration; onSelect: () => void }) {
+
+type RegistrationCardProps = {
+    record: Registration;
+    onSelect: () => void;
+    draggable?: boolean;
+    isDragging?: boolean;
+    onDragStart?: (event: DragEvent<HTMLDivElement>) => void;
+    onDragEnd?: (event: DragEvent<HTMLDivElement>) => void;
+};
+
+export function RegistrationCard({ record, onSelect, draggable = false, isDragging = false, onDragStart, onDragEnd }: RegistrationCardProps) {
+    const skipClickRef = useRef(false);
+
+    const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
+        event.dataTransfer.setData(REGISTRATION_DRAG_MIME, record.id);
+        event.dataTransfer.setData("text/plain", record.id);
+        event.dataTransfer.effectAllowed = "move";
+        onDragStart?.(event);
+    };
+
+    const handleDragEnd = (event: DragEvent<HTMLDivElement>) => {
+        skipClickRef.current = true;
+        onDragEnd?.(event);
+    };
+
+    const handleClick = () => {
+        if (skipClickRef.current) {
+            skipClickRef.current = false;
+            return;
+        }
+        onSelect();
+    };
+
+    const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+        if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            onSelect();
+        }
+    };
+
     return (
-        <button className="registration-card" onClick={onSelect}>
+        <div
+            role="button"
+            tabIndex={0}
+            className={cx("registration-card", isDragging && "registration-card--dragging")}
+            draggable={draggable}
+            onDragStart={draggable ? handleDragStart : undefined}
+            onDragEnd={draggable ? handleDragEnd : undefined}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
+        >
             <div className="card-top">
                 <span className="record-id">CAD-{record.id.padStart(4, "0")}</span>
                 <span className="card-date">{record.updated.slice(8)}/09</span>
@@ -56,6 +108,6 @@ export function RegistrationCard({ record, onSelect }: { record: Registration; o
                 <b>{record.table}</b>
             </div>
             <ActivityCounter documents={record.documents} comments={record.comments} />
-        </button>
+        </div>
     );
 }

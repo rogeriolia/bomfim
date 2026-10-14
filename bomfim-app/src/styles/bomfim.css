@@ -690,6 +690,13 @@ main {
     border-radius: 9px;
     overflow: hidden;
 }
+.kanban-column--drop-target {
+    border-color: var(--color-brand-400);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-brand-500) 25%, transparent);
+}
+.kanban-column--drop-target .column-cards {
+    background: color-mix(in srgb, var(--color-brand-500) 6%, var(--bomfim-navy-100));
+}
 .kanban-column > header {
     padding: 13px 10px;
     display: flex;
@@ -763,6 +770,15 @@ main {
 .registration-card:focus-visible {
     outline: 2px solid var(--color-brand-600);
     outline-offset: 2px;
+}
+.registration-card[draggable="true"] {
+    cursor: grab;
+}
+.registration-card[draggable="true"]:active {
+    cursor: grabbing;
+}
+.registration-card--dragging {
+    opacity: 0.45;
 }
 .card-top {
     display: flex;

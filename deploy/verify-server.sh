@@ -63,6 +63,11 @@ echo "==> Nginx root (se configurado):"
 if command -v nginx >/dev/null 2>&1; then
     grep -r "root " /etc/nginx/sites-enabled/ 2>/dev/null | head -5 || true
     echo "Confira se o root aponta para $ROOT/bomfim-app/dist"
+    if ! grep -r "location /api/" /etc/nginx/sites-enabled/ 2>/dev/null | head -1; then
+        echo "ERRO: Nginx sem 'location /api/' — o browser recebe 404 em /api/*" >&2
+        echo "      Copie deploy/nginx.bomfim.example.conf (bloco location /api/)" >&2
+        exit 1
+    fi
 fi
 
 echo ""

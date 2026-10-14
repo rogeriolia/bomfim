@@ -342,18 +342,26 @@ def cmd_dev(port: int, *, with_api: bool = True, api_port: int = DEFAULT_API_POR
     _npm("run", "dev", "--", "--port", str(port), "--strictPort")
 
 
-def cmd_preview(port: int) -> None:
+def cmd_preview(port: int, *, api_port: int = DEFAULT_API_PORT) -> None:
+    if not _ensure_api(api_port):
+        sys.exit(1)
     if not (APP / "node_modules").is_dir():
         print("Instalando dependências (npm install)...")
         _npm("install")
     print("Gerando build de produção...")
     _npm("run", "build")
-    _banner("preview do build (Vite)", port)
+    _banner(
+        "preview do build (Vite)",
+        port,
+        f"API: http://127.0.0.1:{api_port} (proxy Vite /api)\nLogin: http://localhost:{port}/login",
+    )
     _npm("run", "preview", "--", "--port", str(port), "--strictPort")
 
 
 class SpaStaticHandler(http.server.SimpleHTTPRequestHandler):
     """Arquivos estáticos + index.html para rotas do React Router."""
+
+    api_port: int = DEFAULT_API_PORT
 
     def __init__(self, *args, directory: str | None = None, **kwargs):
         super().__init__(*args, directory=directory, **kwargs)
@@ -361,7 +369,32 @@ class SpaStaticHandler(http.server.SimpleHTTPRequestHandler):
     def log_message(self, fmt: str, *args) -> None:
         sys.stdout.write("%s - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), fmt % args))
 
+    def _api_path(self) -> bool:
+        return self.path.split("?", 1)[0].startswith("/api")
+
+    def _proxy_to_api(self) -> None:
+        import http.client
+
+        length = int(self.headers.get("Content-Length", 0) or 0)
+        body = self.rfile.read(length) if length else None
+        headers = {k: v for k, v in self.headers.items()}
+        conn = http.client.HTTPConnection("127.0.0.1", self.api_port, timeout=120)
+        try:
+            conn.request(self.command, self.path, body=body, headers=headers)
+            resp = conn.getresponse()
+            self.send_response(resp.status)
+            for key, value in resp.getheaders():
+                if key.lower() not in ("transfer-encoding", "connection"):
+                    self.send_header(key, value)
+            self.end_headers()
+            self.wfile.write(resp.read())
+        finally:
+            conn.close()
+
     def do_GET(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
         path = self.translate_path(self.path)
         if os.path.isdir(path):
             index = os.path.join(path, "index.html")
@@ -370,6 +403,36 @@ class SpaStaticHandler(http.server.SimpleHTTPRequestHandler):
         elif not os.path.exists(path):
             self.path = "/index.html"
         return http.server.SimpleHTTPRequestHandler.do_GET(self)
+
+    def do_POST(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
+        self.send_error(405)
+
+    def do_PATCH(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
+        self.send_error(405)
+
+    def do_PUT(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
+        self.send_error(405)
+
+    def do_DELETE(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
+        self.send_error(405)
+
+    def do_OPTIONS(self) -> None:
+        if self._api_path():
+            self._proxy_to_api()
+            return
+        self.send_error(405)
 
 
 def cmd_api(port: int) -> None:
@@ -382,7 +445,9 @@ def cmd_api(port: int) -> None:
     app.run(host="127.0.0.1", port=port, debug=use_reloader, use_reloader=use_reloader)
 
 
-def cmd_serve(port: int) -> None:
+def cmd_serve(port: int, *, api_port: int = DEFAULT_API_PORT) -> None:
+    if not _ensure_api(api_port):
+        sys.exit(1)
     if not DIST.is_dir() or not (DIST / "index.html").is_file():
         print("Erro: bomfim-app/dist não encontrado.", file=sys.stderr)
         print("Execute antes: cd bomfim-app && npm install && npm run build", file=sys.stderr)
@@ -390,9 +455,16 @@ def cmd_serve(port: int) -> None:
         sys.exit(1)
 
     os.chdir(DIST)
-    handler = lambda *args, **kwargs: SpaStaticHandler(*args, directory=str(DIST), **kwargs)
 
-    _banner("servindo build estático (SPA)", port, f"Pasta: {DIST}\nCtrl+C para encerrar.")
+    def handler(*args, **kwargs):
+        SpaStaticHandler.api_port = api_port
+        return SpaStaticHandler(*args, directory=str(DIST), **kwargs)
+
+    _banner(
+        "servindo build estático (SPA)",
+        port,
+        f"Pasta: {DIST}\nAPI: http://127.0.0.1:{api_port} (proxy /api)\nCtrl+C para encerrar.",
+    )
 
     socketserver.ThreadingTCPServer.allow_reuse_address = True
     with socketserver.ThreadingTCPServer(("", port), handler) as httpd:
@@ -440,11 +512,11 @@ def main() -> None:
     if args.mode == "dev":
         cmd_dev(port, with_api=not args.no_api, api_port=args.api_port)
     elif args.mode == "preview":
-        cmd_preview(port)
+        cmd_preview(port, api_port=args.api_port)
     elif args.mode == "api":
         cmd_api(port)
     else:
-        cmd_serve(port)
+        cmd_serve(port, api_port=args.api_port)
 
 
 if __name__ == "__main__":
