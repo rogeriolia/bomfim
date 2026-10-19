@@ -88,6 +88,7 @@ Requer a API em `http://127.0.0.1:5001` para login e listas.
 
 ## Rotas úteis
 
+- `/reports-projeto` — lista pública de HTMLs em [`reports-projeto/`](reports-projeto/) (`report-01.html`, `report-02.html`, …), sem login
 - `/login` — autenticação real
 - `/overview`
 - `/cadastro/kanban`

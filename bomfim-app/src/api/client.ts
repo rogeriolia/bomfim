@@ -36,6 +36,17 @@ export class ApiError extends Error {
     }
 }
 
+export type ReportsProjetoItem = {
+    filename: string;
+    number: number;
+    title: string;
+    url: string;
+};
+
+export function listReportsProjeto() {
+    return request<{ items: ReportsProjetoItem[] }>("/api/public/reports-projeto");
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
     const headers = new Headers(init.headers);
     if (!headers.has("Content-Type") && init.body) {

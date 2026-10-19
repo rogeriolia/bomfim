@@ -6,6 +6,7 @@ import CadastroLayout from "@/pages/cadastro/CadastroLayout";
 import { ProtectedRoute, RequireRole } from "./access";
 
 const Login = lazy(() => import("@/pages/auth/LoginPage"));
+const ReportsProjeto = lazy(() => import("@/pages/reports-projeto/reports-projeto-page"));
 const Overview = lazy(() => import("@/pages/overview/OverviewPage"));
 const Kanban = lazy(() => import("@/pages/cadastro/KanbanPage"));
 const Mapa = lazy(() => import("@/pages/cadastro/MapaPage"));
@@ -42,6 +43,7 @@ export function AppRoutes() {
         >
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/reports-projeto" element={<ReportsProjeto />} />
                 <Route element={<ProtectedRoute />}>
                     <Route element={<AppLayout />}>
                         <Route index element={<Navigate to="/overview" replace />} />

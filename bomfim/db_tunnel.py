@@ -13,6 +13,65 @@ if TYPE_CHECKING:
     from subprocess import Popen
 
 _tunnel_proc: Popen[bytes] | None = None
+_tunnel_forwarder: object | None = None
+
+
+def _parse_ssh_target(target: str) -> tuple[str, str]:
+    target = target.strip()
+    if "@" in target:
+        user, _, host = target.partition("@")
+        return user.strip() or "root", host.strip()
+    return "root", target
+
+
+def _start_sshtunnel_forwarder(
+    ssh_host: str,
+    ssh_user: str,
+    *,
+    local_port: int,
+    ssh_password: str = "",
+    ssh_key: str = "",
+) -> bool:
+    """Túnel via sshtunnel (senha/chave no .env, sem prompt interativo)."""
+    global _tunnel_forwarder
+
+    try:
+        from sshtunnel import SSHTunnelForwarder
+    except ImportError:
+        print(
+            "Erro: instale sshtunnel no venv do projeto: python -m pip install sshtunnel",
+            file=sys.stderr,
+        )
+        return False
+
+    if _tunnel_forwarder is not None:
+        try:
+            _tunnel_forwarder.stop()  # type: ignore[union-attr]
+        except Exception:
+            pass
+        _tunnel_forwarder = None
+
+    kwargs: dict = {
+        "ssh_address_or_host": (ssh_host, 22),
+        "ssh_username": ssh_user,
+        "remote_bind_address": ("127.0.0.1", 5432),
+        "local_bind_address": ("127.0.0.1", local_port),
+        "set_keepalive": 30.0,
+    }
+    if ssh_password:
+        kwargs["ssh_password"] = ssh_password
+    if ssh_key:
+        kwargs["ssh_pkey"] = ssh_key
+
+    try:
+        forwarder = SSHTunnelForwarder(**kwargs)
+        forwarder.start()
+    except Exception as exc:
+        print(f"Erro: túnel SSH (sshtunnel): {exc}", file=sys.stderr)
+        return False
+
+    _tunnel_forwarder = forwarder
+    return True
 
 
 def _can_connect(host: str, port: int, timeout: float = 2.0) -> bool:
@@ -61,39 +120,59 @@ def ensure_db_tunnel_from_env() -> bool:
         os.environ["DB_PORT"] = str(local_port)
         return True
 
-    ssh_bin = shutil.which("ssh")
-    if not ssh_bin:
-        print("Aviso: ssh não encontrado; não foi possível abrir túnel para o Postgres.", file=sys.stderr)
-        return False
+    ssh_password = (_env_get("BOMFIM_SSH_PASSWORD") or "").strip()
+    ssh_key_path = (_env_get("BOMFIM_SSH_IDENTITY_FILE") or "").strip()
+    ssh_user, ssh_host = _parse_ssh_target(ssh_target)
 
-    if _tunnel_proc is not None and _tunnel_proc.poll() is None:
-        _tunnel_proc.terminate()
+    if ssh_password or ssh_key_path:
+        print(f"Abrindo tunel SSH para Postgres ({ssh_target} -> 127.0.0.1:{local_port})...")
+        if not _start_sshtunnel_forwarder(
+            ssh_host,
+            ssh_user,
+            local_port=local_port,
+            ssh_password=ssh_password,
+            ssh_key=ssh_key_path,
+        ):
+            return False
+    else:
+        ssh_bin = shutil.which("ssh")
+        if not ssh_bin:
+            print(
+                "Aviso: defina BOMFIM_SSH_PASSWORD no .env ou instale OpenSSH (ssh no PATH).",
+                file=sys.stderr,
+            )
+            return False
+        if _tunnel_proc is not None and _tunnel_proc.poll() is None:
+            _tunnel_proc.terminate()
 
-    cmd = [
-        ssh_bin,
-        "-N",
-        "-o",
-        "BatchMode=no",
-        "-o",
-        "ExitOnForwardFailure=yes",
-        "-o",
-        "ServerAliveInterval=30",
-        "-L",
-        f"{local_port}:127.0.0.1:5432",
-        ssh_target,
-    ]
-    print(f"Abrindo túnel SSH para Postgres ({ssh_target} → 127.0.0.1:{local_port})…")
-    _tunnel_proc = subprocess.Popen(cmd)
+        cmd = [
+            ssh_bin,
+            "-N",
+            "-o",
+            "BatchMode=no",
+            "-o",
+            "ExitOnForwardFailure=yes",
+            "-o",
+            "ServerAliveInterval=30",
+            "-L",
+            f"{local_port}:127.0.0.1:5432",
+            ssh_target,
+        ]
+        print(f"Abrindo tunel SSH para Postgres ({ssh_target} -> 127.0.0.1:{local_port})...")
+        _tunnel_proc = subprocess.Popen(cmd)
 
     for _ in range(30):
         if _can_connect("127.0.0.1", local_port):
             os.environ["BOMFIM_DB_TUNNEL_ACTIVE"] = "1"
             os.environ["DB_HOST"] = "127.0.0.1"
             os.environ["DB_PORT"] = str(local_port)
-            print(f"Túnel Postgres ativo (DB → 127.0.0.1:{local_port}).")
+            print(f"Tunel Postgres ativo (DB -> 127.0.0.1:{local_port}).")
             return True
-        if _tunnel_proc.poll() is not None:
+        if _tunnel_proc is not None and _tunnel_proc.poll() is not None:
             print("Erro: túnel SSH encerrou. Confirme login/chave SSH no VPS.", file=sys.stderr)
+            return False
+        if _tunnel_forwarder is not None and not getattr(_tunnel_forwarder, "is_active", True):
+            print("Erro: túnel SSH (sshtunnel) encerrou.", file=sys.stderr)
             return False
         time.sleep(0.25)
 

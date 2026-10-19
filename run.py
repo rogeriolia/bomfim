@@ -370,7 +370,8 @@ class SpaStaticHandler(http.server.SimpleHTTPRequestHandler):
         sys.stdout.write("%s - [%s] %s\n" % (self.address_string(), self.log_date_time_string(), fmt % args))
 
     def _api_path(self) -> bool:
-        return self.path.split("?", 1)[0].startswith("/api")
+        path = self.path.split("?", 1)[0]
+        return path.startswith("/api") or path.startswith("/reports-projeto/")
 
     def _proxy_to_api(self) -> None:
         import http.client

@@ -125,9 +125,23 @@ def _storage_root() -> Path:
     return root
 
 
+def _report_projeto_root() -> Path:
+    load_project_dotenv()
+    raw = (
+        _env_get("REPORTS_PROJETO_DIR")
+        or _env_get("REPORT_PROJETO_DIR")
+        or "reports-projeto"
+    )
+    root = Path(raw)
+    if not root.is_absolute():
+        root = PROJECT_ROOT / root
+    return root
+
+
 class Config:
     SECRET_KEY = _env_get("SECRET_KEY", "bomfim-dev-secret-change-in-production")
     STORAGE_ROOT = _storage_root()
+    REPORT_PROJETO_ROOT = _report_projeto_root()
     SQLALCHEMY_DATABASE_URI = _database_uri()
     SQLALCHEMY_ENGINE_OPTIONS = _engine_options()
     SQLALCHEMY_TRACK_MODIFICATIONS = False

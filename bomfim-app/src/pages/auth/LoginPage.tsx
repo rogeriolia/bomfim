@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ArrowRight } from "@untitledui/icons";
-import { Navigate, useNavigate } from "react-router";
+import { Link, Navigate, useNavigate } from "react-router";
 import { useApp } from "@/app/store";
 import { ApiError } from "@/api/client";
 import { Checkbox } from "@/components/base/checkbox/checkbox";
@@ -54,6 +54,9 @@ export default function LoginPage() {
                     </Button>
                     <small>Use o e-mail cadastrado e a senha definida pelo administrador.</small>
                 </form>
+                <p className="login-public-link">
+                    <Link to="/reports-projeto">Reports projeto</Link>
+                </p>
                 <small>© 2026 Bomfim. Todos os direitos reservados.</small>
             </section>
             <section className="login-visual">

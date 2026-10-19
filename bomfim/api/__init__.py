@@ -1,6 +1,7 @@
 from bomfim.api.auth import auth_bp
 from bomfim.api.cnpj_lookup import cnpj_bp
 from bomfim.api.registrations import registrations_bp
+from bomfim.api.report_projeto import ensure_report_projeto_dir, report_projeto_bp
 from bomfim.api.resources import resources_bp
 from bomfim.api.users import users_bp
 
@@ -11,3 +12,6 @@ def register_blueprints(app):
     app.register_blueprint(registrations_bp, url_prefix="/api/registrations")
     app.register_blueprint(cnpj_bp, url_prefix="/api/cnpj")
     app.register_blueprint(resources_bp, url_prefix="/api")
+    app.register_blueprint(report_projeto_bp)
+    with app.app_context():
+        ensure_report_projeto_dir()
