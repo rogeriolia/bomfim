@@ -15,6 +15,20 @@ O `.env` **não entra** no commit (está no `.gitignore`). Secrets ficam só na 
 
 ---
 
+## Nginx e HTTPS — bomfim.4lia.com.br
+
+**No Vultr**, restaure site + Certbot + HTTPS com:
+
+```bash
+cd /opt/bomfim
+git pull origin main
+sudo CERTBOT_EMAIL=seu@email.com bash deploy/install-nginx-bomfim.sh
+```
+
+Configs: `deploy/nginx.bomfim.4lia.com.br.conf` (HTTPS), `.http.conf` (bootstrap). **Não** substitua produção por `nginx.bomfim.example.conf` (sem SSL).
+
+---
+
 ## No servidor (VPS) — pull via SSH (agora)
 
 Conecte no VPS e **cole** (ajuste o caminho se não for `/opt/bomfim`):
