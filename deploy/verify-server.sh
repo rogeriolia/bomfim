@@ -48,6 +48,28 @@ if [[ "$detail_v2" != "True" && "$detail_v2" != "true" ]]; then
 fi
 
 echo ""
+echo "==> Reports projeto (pasta + API publica):"
+REPORTS_DIR="$ROOT/reports-projeto"
+if [[ -d "$REPORTS_DIR" ]]; then
+    ls -la "$REPORTS_DIR" | head -10
+else
+    echo "ERRO: $REPORTS_DIR nao existe — git pull origin main" >&2
+    exit 1
+fi
+reports_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE}/api/public/reports-projeto" || true)
+echo "GET /api/public/reports-projeto -> HTTP ${reports_code}"
+if [[ "$reports_code" != "200" ]]; then
+    echo "ERRO: API sem listagem reports-projeto — git pull && sudo systemctl restart bomfim-api" >&2
+    exit 1
+fi
+html_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE}/reports-projeto/report-01.html" || true)
+echo "GET /reports-projeto/report-01.html -> HTTP ${html_code}"
+if [[ -f "$REPORTS_DIR/report-01.html" && "$html_code" != "200" ]]; then
+    echo "ERRO: report-01.html no disco mas API nao serve — restart bomfim-api" >&2
+    exit 1
+fi
+
+echo ""
 echo "==> Frontend (dist):"
 DIST="$ROOT/bomfim-app/dist/index.html"
 if [[ -f "$DIST" ]]; then

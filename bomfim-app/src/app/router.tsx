@@ -43,7 +43,9 @@ export function AppRoutes() {
         >
             <Routes>
                 <Route path="/login" element={<Login />} />
+                <Route path="/report-projeto" element={<Navigate to="/reports-projeto" replace />} />
                 <Route path="/reports-projeto" element={<ReportsProjeto />} />
+                <Route path="/reports-projeto/" element={<ReportsProjeto />} />
                 <Route element={<ProtectedRoute />}>
                     <Route element={<AppLayout />}>
                         <Route index element={<Navigate to="/overview" replace />} />
