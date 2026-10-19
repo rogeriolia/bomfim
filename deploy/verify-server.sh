@@ -62,11 +62,22 @@ if [[ "$reports_code" != "200" ]]; then
     echo "ERRO: API sem listagem reports-projeto — git pull && sudo systemctl restart bomfim-api" >&2
     exit 1
 fi
+index_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE}/reports-projeto" || true)
+echo "GET /reports-projeto (listagem HTML) -> HTTP ${index_code}"
+if [[ "$index_code" != "200" ]]; then
+    echo "ERRO: API sem pagina /reports-projeto — git pull && restart bomfim-api" >&2
+    exit 1
+fi
 html_code=$(curl -s -o /dev/null -w "%{http_code}" "${BASE}/reports-projeto/report-01.html" || true)
 echo "GET /reports-projeto/report-01.html -> HTTP ${html_code}"
 if [[ -f "$REPORTS_DIR/report-01.html" && "$html_code" != "200" ]]; then
     echo "ERRO: report-01.html no disco mas API nao serve — restart bomfim-api" >&2
     exit 1
+fi
+if command -v nginx >/dev/null 2>&1; then
+    if ! grep -r "reports-projeto" /etc/nginx/sites-enabled/ 2>/dev/null | head -1; then
+        echo "AVISO: Nginx sem proxy ^~ /reports-projeto — copie deploy/nginx.bomfim.example.conf" >&2
+    fi
 fi
 
 echo ""

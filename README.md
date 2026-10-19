@@ -88,7 +88,7 @@ Requer a API em `http://127.0.0.1:5001` para login e listas.
 
 ## Rotas úteis
 
-- `/reports-projeto` — lista pública de HTMLs em [`reports-projeto/`](reports-projeto/) (`report-01.html`, `report-02.html`, …), sem login
+- `/reports-projeto` — lista pública (Flask) + HTMLs em [`reports-projeto/`](reports-projeto/) (`report-01.html`, …), sem login. **Produção:** Nginx faz proxy de `/reports-projeto` → API (`deploy/nginx.bomfim.example.conf`). **Dev:** React em `:5173` + mesmos arquivos via API.
 - `/login` — autenticação real
 - `/overview`
 - `/cadastro/kanban`
